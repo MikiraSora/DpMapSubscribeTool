@@ -1,0 +1,86 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:DpMapSubscribeTool.ViewModels"
+             xmlns:ic="clr-namespace:FluentIcons.Avalonia;assembly=FluentIcons.Avalonia"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             xmlns:ct="clr-namespace:DpMapSubscribeTool.Controls"
+             x:Class="DpMapSubscribeTool.Views.MainView"
+             x:DataType="vm:MainViewModel">
+  <Design.DataContext>
+    <!-- This only sets the DataContext for the previewer in an IDE,
+         to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+    <vm:MainViewModel />
+  </Design.DataContext>
+
+	<SplitView IsPaneOpen="{Binding IsPaneOpen}"
+               CompactPaneLength="48"
+               DisplayMode="CompactInline"
+               OpenPaneLength="200">
+		<SplitView.Pane>
+			<Grid RowDefinitions="*,*">
+				<StackPanel Orientation="Vertical"
+                            Spacing="5"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Top">
+					<Button HorizontalAlignment="Left"
+                            Width="32"
+                            Height="32"
+                            Margin="8 10"
+                            Command="{Binding TriggerPaneCommand}">
+						<ic:SymbolIcon Symbol="AppsList" FontSize="20" IsFilled="True" VerticalAlignment="Center" />
+					</Button>
+					<ListBox Margin="5 0" Padding="0" ItemsSource="{Binding TopItems}"
+                             SelectedItem="{Binding SelectedListItem}">
+						<ListBox.Styles>
+							<Style Selector="ListBoxItem">
+								<Setter Property="Padding" Value="10 8" />
+							</Style>
+						</ListBox.Styles>
+						<ListBox.ItemTemplate>
+							<DataTemplate DataType="{x:Type ct:ListItemTemplate}">
+								<StackPanel Spacing="15" Orientation="Horizontal">
+									<ic:SymbolIcon Symbol="{Binding IconSymbol}" FontSize="20"
+                                                   VerticalAlignment="Center" />
+									<TextBlock Text="{Binding Label}" />
+								</StackPanel>
+							</DataTemplate>
+						</ListBox.ItemTemplate>
+					</ListBox>
+				</StackPanel>
+
+				<Grid Grid.Row="1">
+					<ListBox VerticalAlignment="Bottom" Margin="5 0" Padding="0" ItemsSource="{Binding BottomItems}"
+                             SelectedItem="{Binding SelectedListItem}">
+						<ListBox.Styles>
+							<Style Selector="ListBoxItem">
+								<Setter Property="Padding" Value="10 8" />
+							</Style>
+						</ListBox.Styles>
+						<ListBox.ItemTemplate>
+							<DataTemplate DataType="{x:Type ct:ListItemTemplate}">
+								<StackPanel Spacing="15" Orientation="Horizontal">
+									<ic:SymbolIcon Symbol="{Binding IconSymbol}" FontSize="20"
+                                                   VerticalAlignment="Center" />
+									<TextBlock Text="{Binding Label}" />
+								</StackPanel>
+							</DataTemplate>
+						</ListBox.ItemTemplate>
+					</ListBox>
+				</Grid>
+			</Grid>
+		</SplitView.Pane>
+
+		<SplitView.Content>
+			<Border CornerRadius="12 0 0 0">
+				<Grid>
+					<TransitioningContentControl Content="{Binding MainPageContent}" />
+					<!--<Grid ColumnDefinitions="*,2*,*">
+						<notification:NotificationMessageContainer Grid.Column="1" Manager="{Binding MessageManager}" />
+					</Grid>-->
+				</Grid>
+			</Border>
+		</SplitView.Content>
+	</SplitView>
+</UserControl>
