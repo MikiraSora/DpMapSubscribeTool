@@ -59,7 +59,7 @@ public partial class MainViewModel : ViewModelBase
 
     public ObservableCollection<ListItemTemplate> BottomItems { get; } = new();
 
-    public async ValueTask NavigatePageAsync<T>(T existObj = default) where T : PageViewModelBase
+    public ValueTask NavigatePageAsync<T>(T existObj = default) where T : PageViewModelBase
     {
         var obj = existObj ?? viewModelFactory.CreateViewModel(typeof(T));
         var type = obj.GetType();
@@ -69,6 +69,8 @@ public partial class MainViewModel : ViewModelBase
         if (TopItems.Concat(BottomItems).FirstOrDefault(x => x.ModelType == type) is ListItemTemplate template)
             //make select status if modelView type contains menu list.
             SelectedListItem = template;
+
+        return ValueTask.CompletedTask;
     }
 
     public ValueTask NavigatePageAsync(Type pageViewModelType)
@@ -86,7 +88,7 @@ public partial class MainViewModel : ViewModelBase
         }
 
         //load default page.
-        NavigatePageAsync<HomePageViewModel>();
+        await NavigatePageAsync<HomePageViewModel>();
     }
 
     partial void OnSelectedListItemChanged(ListItemTemplate oldValue, ListItemTemplate newValue)
