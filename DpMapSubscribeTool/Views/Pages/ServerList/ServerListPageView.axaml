@@ -1,0 +1,123 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:serverList="clr-namespace:DpMapSubscribeTool.ViewModels.Pages.ServerList"
+             xmlns:models="clr-namespace:DpMapSubscribeTool.Models"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="DpMapSubscribeTool.Views.Pages.ServerList.ServerListPageView">
+    <Design.DataContext>
+        <serverList:ServerListPageViewModel />
+    </Design.DataContext>
+    <ScrollViewer>
+        <StackPanel Name="host">
+            <!--Top Menu-->
+            <StackPanel>
+                <Expander CornerRadius="5" HorizontalAlignment="Stretch" Margin="10" Padding="5">
+                    <Expander.Header>
+                        <Label>选项</Label>
+                    </Expander.Header>
+                    <Expander.Content>
+                        <StackPanel>
+                            <WrapPanel Margin="5">
+                                <Button>全部刷新</Button>
+                            </WrapPanel>
+                        </StackPanel>
+                    </Expander.Content>
+                </Expander>
+            </StackPanel>
+            <!--Subscribe Server List Panel-->
+            <StackPanel>
+                <Expander IsExpanded="True" CornerRadius="5" HorizontalAlignment="Stretch" Margin="10" Padding="5">
+                    <Expander.Header>
+                        <Label>受关注地图的服务器列表</Label>
+                    </Expander.Header>
+                    <Expander.Content>
+                        <DataGrid Grid.Row="1"
+                                  IsReadOnly="True"
+                                  SelectionMode="Single"
+                                  VerticalScrollBarVisibility="Disabled"
+                                  AutoGenerateColumns="False"
+                                  ItemsSource="{Binding ServerManager.SubscribeServers}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn IsReadOnly="True" Header="服务器名" Binding="{Binding .}" />
+                                <DataGridTextColumn IsReadOnly="True" Header="地图" Binding="{Binding Map}" />
+                                <DataGridTextColumn IsReadOnly="True" Header="译名"
+                                                    Binding="{Binding Map,Mode=OneWay,Converter={StaticResource GetMapTranslationNameConverter}}" />
+                                <DataGridTextColumn IsReadOnly="True" Header="关卡状态" Binding="{Binding State}" />
+                                <DataGridTextColumn IsReadOnly="True" Header="人数"
+                                                    Binding="{Binding .,Mode=OneWay,Converter={StaticResource DisplayPlayerCountConverter}}" />
+                                <DataGridTextColumn IsReadOnly="True" Header="延迟" Binding="{Binding Delay}" />
+                                <DataGridTextColumn IsReadOnly="True" Header="所属社区"
+                                                    Binding="{Binding Info.ServerGroupDisplay}" />
+                                <!--
+                                <DataGridTextColumn Header="服务器地址" Binding="{Binding Info.EndPointDescription}" />
+                                -->
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Expander.Content>
+                </Expander>
+            </StackPanel>
+            <StackPanel>
+                <Expander IsExpanded="True" CornerRadius="5" HorizontalAlignment="Stretch" Margin="10" Padding="5">
+                    <Expander.Header>
+                        <Label>全部服务器列表</Label>
+                    </Expander.Header>
+                    <Expander.Content>
+                        <DataGrid Grid.Row="1"
+                                  IsReadOnly="True"
+                                  SelectionMode="Single"
+                                  VerticalScrollBarVisibility="Disabled"
+                                  AutoGenerateColumns="False"
+                                  ItemsSource="{Binding ServerManager.Servers}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn IsReadOnly="True" Header="服务器名" Binding="{Binding .}" />
+                                <DataGridTextColumn IsReadOnly="True" Header="地图" Binding="{Binding Map}" />
+                                <DataGridTextColumn IsReadOnly="True" Header="译名"
+                                                    Binding="{Binding Map,Mode=OneWay,Converter={StaticResource GetMapTranslationNameConverter}}" />
+                                <DataGridTextColumn IsReadOnly="True" Header="关卡状态" Binding="{Binding State}" />
+                                <DataGridTemplateColumn IsReadOnly="True" Header="人数">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Label
+                                                Content="{Binding .,Mode=OneWay,Converter={StaticResource DisplayPlayerCountConverter}}">
+                                                <Label.Foreground>
+                                                    <MultiBinding
+                                                        Converter="{StaticResource BrushPlayerCountConverter }">
+                                                        <Binding Path="CurrentPlayerCount" />
+                                                        <Binding Path="MaxPlayerCount" />
+                                                    </MultiBinding>
+                                                </Label.Foreground>
+                                            </Label>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn IsReadOnly="True" Header="延迟" Binding="{Binding Delay}" />
+                                <DataGridTextColumn IsReadOnly="True" Header="所属社区"
+                                                    Binding="{Binding Info.ServerGroupDisplay}" />
+                                <!--
+                                <DataGridTextColumn Header="服务器地址" Binding="{Binding Info.EndPointDescription}" />
+                                -->
+                            </DataGrid.Columns>
+                            <DataGrid.Styles>
+                                <Style Selector="DataGridCell Rectangle">
+                                    <Setter Property="IsVisible" Value="False" />
+                                </Style>
+                                <Style Selector="DataGridRow">
+                                    <Setter Property="ContextMenu">
+                                        <ContextMenu>
+                                            <MenuItem x:DataType="models:Server"
+                                                      Command="{Binding #host.((serverList:ServerListPageViewModel)DataContext).ShowToastCommand}"
+                                                      CommandParameter="{Binding .}"
+                                                      Header="Show Toast" />
+                                        </ContextMenu>
+                                    </Setter>
+                                </Style>
+                            </DataGrid.Styles>
+                        </DataGrid>
+                    </Expander.Content>
+                </Expander>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

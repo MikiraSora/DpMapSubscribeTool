@@ -1,41 +1,57 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace DpMapSubscribeTool.Utils.Injections
+namespace DpMapSubscribeTool.Utils.Injections;
+
+public static class AddInjectAttbuteServiceCollection
 {
-    public static class AddInjectAttbuteServiceCollection
+    public static IServiceCollection AddInjectsByAttributes(this IServiceCollection services, Assembly assembly)
     {
-        public static IServiceCollection AddInjectsByAttributes(this IServiceCollection services, Assembly assembly)
+        var types = assembly.GetTypes().Where(type => type.GetCustomAttributes<RegisterInjectableAttribute>().Any());
+
+        var singletonCachedObjects = new Dictionary<Type, object>();
+
+        foreach (var type in types)
         {
-            var types = assembly.GetTypes().Where(type => type.GetCustomAttributes<RegisterInjectableAttribute>().Any());
-
-            foreach (var type in types)
+            var attrs = type.GetCustomAttributes<RegisterInjectableAttribute>().ToArray();
+            foreach (var attr in attrs)
             {
-                foreach (var attr in type.GetCustomAttributes<RegisterInjectableAttribute>())
+                var targetType = attr.TargetInjectType;
+
+                if (attr.ServiceLifetime == ServiceLifetime.Singleton && attrs.Length > 1)
                 {
-                    var targetType = attr.TargetInjectType;
+                    if (attrs.Any(x => x.ServiceLifetime != ServiceLifetime.Singleton))
+                        throw new Exception(
+                            $"For type {type.FullName}, all [RegisterInjectable] lifetime must be same if contains singleton lifetime");
 
-                    Func<Type, Type, IServiceCollection> caller = attr.ServiceLifetime switch
-                    {
-                        ServiceLifetime.Singleton => services.AddSingleton,
-                        ServiceLifetime.Transient => services.AddTransient,
-                        ServiceLifetime.Scoped => services.AddScoped,
-                        _ => default
-                    };
 
-                    if (caller != null)
-                    {
-                        caller(targetType, type);
-                    }
+                    // all [RegisterInjectable] are singleton lifetime.
+                    foreach (var attr2 in attrs)
+                        services.AddSingleton(attr2.TargetInjectType, provider =>
+                        {
+                            if (!singletonCachedObjects.TryGetValue(type, out var cacheObj))
+                                cacheObj = singletonCachedObjects[type] =
+                                    ActivatorUtilities.CreateInstance(provider, type);
+                            return cacheObj;
+                        });
+                    break;
                 }
-            }
 
-            return services;
+                Func<Type, Type, IServiceCollection> caller = attr.ServiceLifetime switch
+                {
+                    ServiceLifetime.Singleton => services.AddSingleton,
+                    ServiceLifetime.Transient => services.AddTransient,
+                    ServiceLifetime.Scoped => services.AddScoped,
+                    _ => default
+                };
+                if (caller != null)
+                    caller(targetType, type);
+            }
         }
+
+        return services;
     }
 }

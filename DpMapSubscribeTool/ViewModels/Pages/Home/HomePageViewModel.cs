@@ -8,6 +8,6 @@ namespace DpMapSubscribeTool.ViewModels.Pages.Home
 {
     internal class HomePageViewModel : PageViewModelBase
     {
-        public override string Title => "Home";
+        public override string Title => "主页";
     }
 }

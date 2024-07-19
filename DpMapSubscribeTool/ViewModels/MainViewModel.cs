@@ -12,7 +12,11 @@ using DpMapSubscribeTool.ViewModels.Pages;
 using System.Linq;
 using DpMapSubscribeTool.Services.Persistences;
 using DpMapSubscribeTool.Services.Notifications;
+using DpMapSubscribeTool.Services.Servers;
+using DpMapSubscribeTool.Services.Settings;
 using DpMapSubscribeTool.ViewModels.Pages.Home;
+using DpMapSubscribeTool.ViewModels.Pages.ServerList;
+using DpMapSubscribeTool.ViewModels.Pages.Setting;
 
 namespace DpMapSubscribeTool.ViewModels;
 
@@ -20,6 +24,7 @@ public partial class MainViewModel : ViewModelBase
 {
     private readonly ILogger<MainViewModel> logger;
     private readonly IPersistence persistence;
+    private readonly IServerManager serverManager;
     private readonly ViewModelFactory viewModelFactory;
 
     [ObservableProperty]
@@ -37,10 +42,12 @@ public partial class MainViewModel : ViewModelBase
     public MainViewModel(
         ILogger<MainViewModel> logger,
         IPersistence persistence,
+        IServerManager serverManager,
         ViewModelFactory viewModelFactory)
     {
         this.logger = logger;
         this.persistence = persistence;
+        this.serverManager = serverManager;
         this.viewModelFactory = viewModelFactory;
 
         ProcessInit();
@@ -49,12 +56,8 @@ public partial class MainViewModel : ViewModelBase
     public ObservableCollection<ListItemTemplate> TopItems { get; } = new()
     {
         new ListItemTemplate(typeof(HomePageViewModel), "主页", "Home"),
-        /*
-        new ListItemTemplate(typeof(UserInfoPageViewModel), "用户信息", "Person"),
-        new ListItemTemplate(typeof(Pages.MaimaiDx.HomePageViewModel), "maimai DX 主页", "Games"),
-        new ListItemTemplate(typeof(MusicListPageViewModel), "maimai Dx 曲库", "MusicNote1"),
-        new ListItemTemplate(typeof(CollectionLookupPageViewModel), "maimai Dx 收藏品", "CollectionsAdd")
-        */
+        new ListItemTemplate(typeof(ServerListPageViewModel), "服务器列表", "ServerList"),
+        new ListItemTemplate(typeof(SettingPageViewModel), "设置", "Setting"),
     };
 
     public ObservableCollection<ListItemTemplate> BottomItems { get; } = new();
@@ -89,6 +92,8 @@ public partial class MainViewModel : ViewModelBase
 
         //load default page.
         await NavigatePageAsync<HomePageViewModel>();
+        //prepare server list
+        await serverManager.PrepareData();
     }
 
     partial void OnSelectedListItemChanged(ListItemTemplate oldValue, ListItemTemplate newValue)

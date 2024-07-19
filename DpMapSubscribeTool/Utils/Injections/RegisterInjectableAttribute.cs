@@ -1,24 +1,18 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace DpMapSubscribeTool.Utils.Injections
+namespace DpMapSubscribeTool.Utils.Injections;
+
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
+public class RegisterInjectableAttribute : Attribute
 {
-    public class RegisterInjectableAttribute : Attribute
+    public RegisterInjectableAttribute(Type targetType, ServiceLifetime serviceLifetime = ServiceLifetime.Scoped)
     {
-        private readonly Type type;
-
-        public RegisterInjectableAttribute(Type targetType, ServiceLifetime serviceLifetime = ServiceLifetime.Scoped)
-        {
-            type = targetType;
-            ServiceLifetime = serviceLifetime;
-        }
-
-        public Type TargetInjectType => type;
-
-        public ServiceLifetime ServiceLifetime { get; }
+        TargetInjectType = targetType;
+        ServiceLifetime = serviceLifetime;
     }
+
+    public Type TargetInjectType { get; }
+
+    public ServiceLifetime ServiceLifetime { get; }
 }

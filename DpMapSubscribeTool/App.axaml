@@ -2,12 +2,22 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="DpMapSubscribeTool.App"
              xmlns:local="using:DpMapSubscribeTool"
+             xmlns:valueConverters="clr-namespace:DpMapSubscribeTool.ValueConverters"
              RequestedThemeVariant="Default">
              <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+             
+             <Application.Resources>
+	             <valueConverters:DisplayPlayerCountConverter x:Key="DisplayPlayerCountConverter"/>
+	             <valueConverters:BrushPlayerCountConverter x:Key="BrushPlayerCountConverter"/>
+             </Application.Resources>
 
     <Application.Styles>
         <FluentTheme />
+        <StyleInclude Source="avares://DataBox/Themes/DataBoxFluentTheme.axaml" />
+        <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
 		<Style Selector="Border.ContentContainer">
+			<Setter Property="CornerRadius" Value="5" />
+			<Setter Property="Padding" Value="5" />
 			<Setter Property="Background" Value="{DynamicResource SystemControlBackgroundBaseLowBrush}" />
 		</Style>
     </Application.Styles>

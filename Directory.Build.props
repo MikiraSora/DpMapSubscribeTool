@@ -1,5 +1,10 @@
 <Project>
   <PropertyGroup>
-    <AvaloniaVersion>11.0.2</AvaloniaVersion>
+    <AvaloniaVersion>11.0.11</AvaloniaVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- 禁止代码分析警告CA2017 -->
+    <NoWarn>$(NoWarn);CA2017</NoWarn>
   </PropertyGroup>
 </Project>

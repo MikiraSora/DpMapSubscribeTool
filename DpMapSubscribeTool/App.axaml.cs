@@ -1,17 +1,17 @@
-﻿using Avalonia;
+﻿using System;
+using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
 using DpMapSubscribeTool.Utils.Injections;
+using DpMapSubscribeTool.ValueConverters;
 using DpMapSubscribeTool.ViewModels;
 using DpMapSubscribeTool.Views;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System;
 
 namespace DpMapSubscribeTool;
 
-public partial class App : Application
+public class App : Application
 {
     internal IServiceProvider RootServiceProvider { get; private set; }
 
@@ -23,6 +23,15 @@ public partial class App : Application
     public override void OnFrameworkInitializationCompleted()
     {
         InitServiceProvider();
+        var logger = RootServiceProvider.GetService<ILogger<App>>();
+
+        var injectableConverters = RootServiceProvider.GetServices<IInjectableValueConverter>();
+        foreach (var converter in injectableConverters)
+        {
+            var key = converter.GetType().Name;
+            logger.LogInformation($"add injectable converter: {key}");
+            Resources[key] = converter;
+        }
 
         var mainViewModel = ActivatorUtilities.CreateInstance<MainViewModel>(RootServiceProvider);
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
@@ -45,10 +54,7 @@ public partial class App : Application
             throw new Exception("InitServiceProvider() has been called.");
 
         var serviceCollection = new ServiceCollection();
-        serviceCollection.AddLogging(o =>
-        {
-            o.SetMinimumLevel(LogLevel.Debug);
-        });
+        serviceCollection.AddLogging(o => { o.SetMinimumLevel(LogLevel.Debug); });
         serviceCollection.AddKeyedScoped("AppBuild", (provider, o) =>
         {
             if (o is string key && key == "AppBuild")

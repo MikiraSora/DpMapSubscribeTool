@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace DpMapSubscribeTool.Utils
 {
-    internal class DesignModeHelper
+    internal static class DesignModeHelper
     {
         public static bool IsDesignMode => Avalonia.Controls.Design.IsDesignMode;
 

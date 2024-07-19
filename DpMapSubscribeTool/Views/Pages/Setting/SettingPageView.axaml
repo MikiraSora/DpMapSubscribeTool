@@ -1,0 +1,155 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:DpMapSubscribeTool.ViewModels.Pages.Setting"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="DpMapSubscribeTool.Views.Pages.Setting.SettingPageView">
+    <Design.DataContext>
+        <vm:SettingPageViewModel />
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*">
+        <StackPanel>
+            <Border Padding="5" Background="{DynamicResource SystemControlBackgroundBaseLowBrush}">
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label FontSize="25" FontWeight="Bold">选项</Label>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Button Command="{Binding SaveSettingCommand}" Margin="10,0" FontWeight="Bold">保存全部选项</Button>
+                        <Button Command="{Binding ResetSettingCommand}" Margin="10,0" FontWeight="Bold">重置到默认</Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Name="host">
+                <Border Classes="ContentContainer" Margin="10">
+                    <StackPanel>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label VerticalAlignment="Center" FontWeight="Bold" FontSize="20">地图订阅规则列表</Label>
+                            <StackPanel Orientation="Horizontal" Grid.Column="1" Margin="5" VerticalAlignment="Center">
+                                <Button Command="{Binding CreateNewRuleCommand}">添加新的规则</Button>
+                                <Button Margin="5,0" Command="{Binding RuleTutorialCommand}">教程</Button>
+                            </StackPanel>
+                        </Grid>
+                        <Border Height="2" Classes="ContentContainer" Margin="0,5" />
+                        <!--
+                    <DataBox ItemsSource="{Binding ApplicationSettings.UserMapSubscribes}"
+                             CanUserResizeColumns="True"
+                             Padding="5"
+                             GridLinesVisibility="All">
+                        <DataBox.Columns>
+                            <DataBoxCheckBoxColumn x:DataType="models:MapSubscribe" Header="是否启用"
+                                                   IsChecked="{Binding Enable}"
+                                                   Width="Auto" />
+                            <DataBoxEntryColumn x:DataType="models:MapSubscribe" Header="过滤名称" Text="{Binding Name}"
+                                                Width="150" />
+                            <DataBoxItemsColumn x:DataType="models:MapSubscribe" Header="过滤类型"
+                                                SelectedItem="{Binding MatchRule}"
+                                                Items="{Binding #host.((vm:SettingPageViewModel)DataContext).MapSubscribeRuleEnums,Mode=OneTime}"
+                                                Width="Auto" />
+                            <DataBoxEntryColumn x:DataType="models:MapSubscribe" Header="过滤内容"
+                                                Text="{Binding MatchContent}"
+                                                Width="*" />
+                        </DataBox.Columns>
+                    </DataBox>
+                    -->
+                        <DataGrid VerticalScrollBarVisibility="Disabled" Margin="5"
+                                  AutoGenerateColumns="False"
+                                  ItemsSource="{Binding ApplicationSettings.UserMapSubscribes}">
+                            <DataGrid.Columns>
+                                <DataGridCheckBoxColumn Header="是否启用" Binding="{Binding Enable}" />
+                                <DataGridTextColumn Header="过滤名称" Binding="{Binding Name}" />
+                                <DataGridTemplateColumn Header="过滤类型">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <ComboBox Margin="5" SelectedItem="{Binding MatchRule}"
+                                                      ItemsSource="{Binding #host.((vm:SettingPageViewModel)DataContext).MapSubscribeRuleEnums,Mode=OneTime}" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn MinWidth="100" Header="过滤内容" Binding="{Binding MatchContent}" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </StackPanel>
+                </Border>
+                <Border Classes="ContentContainer" Margin="10">
+                    <StackPanel>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label VerticalAlignment="Center" FontWeight="Bold" FontSize="20">自动刷新</Label>
+                            <StackPanel Orientation="Horizontal" Grid.Column="1" Margin="5" VerticalAlignment="Center" />
+                        </Grid>
+                        <Border Height="2" Classes="ContentContainer" Margin="0,5" />
+                        <StackPanel Margin="5,0">
+                            <Grid ColumnDefinitions="Auto,*" RowDefinitions="*,*">
+                                <Label VerticalAlignment="Center" Content="服务器Ping：" />
+                                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal">
+                                    <TextBox Width="50" Text="{Binding ApplicationSettings.AutoPingTimeInterval}" />
+                                    <Label VerticalAlignment="Center" Content="秒/次" />
+                                </StackPanel>
+                                <Label Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Content="服务器状态：" />
+                                <StackPanel Margin="0,5,0,0" Grid.Row="1" Grid.Column="1" Orientation="Horizontal">
+                                    <TextBox Width="50" Text="{Binding ApplicationSettings.AutoRefreshTimeInterval}" />
+                                    <Label VerticalAlignment="Center" Content="秒/次" />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="ContentContainer" Margin="10">
+                    <StackPanel>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label VerticalAlignment="Center" FontWeight="Bold" FontSize="20">提醒</Label>
+                            <StackPanel Orientation="Horizontal" Grid.Column="1" Margin="5" VerticalAlignment="Center" />
+                        </Grid>
+                        <Border Height="2" Classes="ContentContainer" Margin="0,5" />
+                        <StackPanel Margin="5,0">
+                            <CheckBox Content="启用提醒功能" IsChecked="{Binding ApplicationSettings.EnableNotication}" />
+                            <StackPanel IsVisible="{Binding ApplicationSettings.EnableNotication}">
+                                <CheckBox Content="当玩家正在cs2/csgo前台游戏时可以提醒"
+                                          IsChecked="{Binding ApplicationSettings.EnableNoticationByTaskbar}" />
+                                <CheckBox Content="允许使用音效提醒"
+                                          IsChecked="{Binding ApplicationSettings.EnableNoticationBySound}" />
+                                <StackPanel Margin="25,0,0,0" Orientation="Horizontal"
+                                            IsVisible="{Binding ApplicationSettings.EnableNoticationBySound}">
+                                    <Label VerticalAlignment="Center" Content="指定音效文件(不填则使用默认音效):" />
+                                    <TextBox Width="300" Text="{Binding ApplicationSettings.NoticationSoundFilePath}" />
+                                </StackPanel>
+                                <CheckBox Content="允许使用通知栏提醒"
+                                          IsChecked="{Binding ApplicationSettings.EnableNoticationByTaskbar}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="ContentContainer" Margin="10">
+                    <StackPanel>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label VerticalAlignment="Center" FontWeight="Bold" FontSize="20">测试</Label>
+                            <StackPanel Orientation="Horizontal" Grid.Column="1" Margin="5" VerticalAlignment="Center" />
+                        </Grid>
+                        <Border Height="2" Classes="ContentContainer" Margin="0,5" />
+                        <StackPanel Margin="5,0">
+                            <StackPanel Margin="0,5" Orientation="Horizontal">
+                                <Label VerticalAlignment="Center" Content="人数:" />
+                                <TextBox Width="50" Text="{Binding TestServerManager.ServerWaitForUpdate.CurrentPlayerCount}" />
+                                <Label Margin="5,0" VerticalAlignment="Center" Content="/" />
+                                <TextBox Width="50" Text="{Binding TestServerManager.ServerWaitForUpdate.MaxPlayerCount}" />
+                            </StackPanel>
+                            <StackPanel Margin="0,5" Orientation="Horizontal">
+                                <Label VerticalAlignment="Center" Content="地图：" />
+                                <TextBox Width="200" Text="{Binding TestServerManager.ServerWaitForUpdate.Map}" />
+                            </StackPanel>
+                            <StackPanel Margin="0,5" Orientation="Horizontal">
+                                <Label VerticalAlignment="Center" Content="状态：" />
+                                <TextBox Width="100" Text="{Binding TestServerManager.ServerWaitForUpdate.State}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

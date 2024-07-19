@@ -8,7 +8,7 @@ namespace DpMapSubscribeTool.Services.Persistences
 {
     public interface IPersistence
     {
-        ValueTask Save<T>(T obj);
-        ValueTask<T> Load<T>() where T : new();
+        Task Save<T>(T obj);
+        Task<T> Load<T>();
     }
 }
