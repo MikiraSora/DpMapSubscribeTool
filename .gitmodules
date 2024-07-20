@@ -1,0 +1,3 @@
+[submodule "AvaloniaDialogs"]
+	path = Dependencies/AvaloniaDialogs
+	url = https://github.com/Bip901/AvaloniaDialogs
