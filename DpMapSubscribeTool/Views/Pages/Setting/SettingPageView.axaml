@@ -3,7 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:DpMapSubscribeTool.ViewModels.Pages.Setting"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             mc:Ignorable="d" d:DesignWidth="800"
              x:Class="DpMapSubscribeTool.Views.Pages.Setting.SettingPageView">
     <Design.DataContext>
         <vm:SettingPageViewModel />
@@ -109,7 +109,7 @@
                             <CheckBox Content="启用提醒功能" IsChecked="{Binding ApplicationSettings.EnableNotication}" />
                             <StackPanel IsVisible="{Binding ApplicationSettings.EnableNotication}">
                                 <CheckBox Content="当玩家正在cs2/csgo前台游戏时可以提醒"
-                                          IsChecked="{Binding ApplicationSettings.EnableNoticationByTaskbar}" />
+                                          IsChecked="{Binding ApplicationSettings.EnableNoticationIfGameForeground}" />
                                 <CheckBox Content="允许使用音效提醒"
                                           IsChecked="{Binding ApplicationSettings.EnableNoticationBySound}" />
                                 <StackPanel Margin="25,0,0,0" Orientation="Horizontal"
@@ -134,9 +134,11 @@
                         <StackPanel Margin="5,0">
                             <StackPanel Margin="0,5" Orientation="Horizontal">
                                 <Label VerticalAlignment="Center" Content="人数:" />
-                                <TextBox Width="50" Text="{Binding TestServerManager.ServerWaitForUpdate.CurrentPlayerCount}" />
+                                <TextBox Width="50"
+                                         Text="{Binding TestServerManager.ServerWaitForUpdate.CurrentPlayerCount}" />
                                 <Label Margin="5,0" VerticalAlignment="Center" Content="/" />
-                                <TextBox Width="50" Text="{Binding TestServerManager.ServerWaitForUpdate.MaxPlayerCount}" />
+                                <TextBox Width="50"
+                                         Text="{Binding TestServerManager.ServerWaitForUpdate.MaxPlayerCount}" />
                             </StackPanel>
                             <StackPanel Margin="0,5" Orientation="Horizontal">
                                 <Label VerticalAlignment="Center" Content="地图：" />
@@ -145,6 +147,30 @@
                             <StackPanel Margin="0,5" Orientation="Horizontal">
                                 <Label VerticalAlignment="Center" Content="状态：" />
                                 <TextBox Width="100" Text="{Binding TestServerManager.ServerWaitForUpdate.State}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="ContentContainer" Margin="10">
+                    <StackPanel>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label VerticalAlignment="Center" FontWeight="Bold" FontSize="20">风云社设置</Label>
+                            <StackPanel Orientation="Horizontal" Grid.Column="1" Margin="5" VerticalAlignment="Center" />
+                        </Grid>
+                        <Border Height="2" Classes="ContentContainer" Margin="0,5" />
+                        <StackPanel Margin="5,0">
+                            <StackPanel Margin="0,5" Orientation="Horizontal">
+                                <Label VerticalAlignment="Center" Content="用户UID：" />
+                                <TextBox Width="100" Text="{Binding FysServerSettings.PlayerName}" />
+                                <Button Margin="10,0" Content="测试获取用户游戏名称" />
+                                <Label VerticalAlignment="Center" Content="{Binding FysTestUserNameResult}" />
+                            </StackPanel>
+                            <StackPanel Margin="0,5" Orientation="Horizontal">
+                                <Label VerticalAlignment="Center" Content="每隔 " />
+                                <TextBox Margin="5,0" Width="50"
+                                         Text="{Binding FysServerSettings.EventDataRefreshInterval}" />
+                                <Label VerticalAlignment="Center" Content="秒获取一次服务器数据" />
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>

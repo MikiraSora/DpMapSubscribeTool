@@ -23,4 +23,11 @@ public interface IServerManager
     Task PrepareData();
 
     Task RefreshServers();
+
+    Task SqueezeJoinServer(ServerInfo serverInfo, SqueezeJoinServerOption option);
+
+    Task SqueezeJoinServer(Server server, SqueezeJoinServerOption option)
+    {
+        return SqueezeJoinServer(server.Info, option);
+    }
 }

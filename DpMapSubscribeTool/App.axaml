@@ -3,26 +3,36 @@
              x:Class="DpMapSubscribeTool.App"
              xmlns:local="using:DpMapSubscribeTool"
              xmlns:valueConverters="clr-namespace:DpMapSubscribeTool.ValueConverters"
+             xmlns:dialogHostAvalonia="clr-namespace:DialogHostAvalonia;assembly=DialogHost.Avalonia"
              RequestedThemeVariant="Default">
-             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
-             
-             <Application.Resources>
-	             <valueConverters:DisplayPlayerCountConverter x:Key="DisplayPlayerCountConverter"/>
-	             <valueConverters:BrushPlayerCountConverter x:Key="BrushPlayerCountConverter"/>
-             </Application.Resources>
+    <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+
+    <Application.Resources>
+        <valueConverters:DisplayPlayerCountConverter x:Key="DisplayPlayerCountConverter" />
+        <valueConverters:BrushPlayerCountConverter x:Key="BrushPlayerCountConverter" />
+    </Application.Resources>
 
     <Application.Styles>
         <FluentTheme />
         <StyleInclude Source="avares://DataBox/Themes/DataBoxFluentTheme.axaml" />
-        <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
-		<Style Selector="Border.ContentContainer">
-			<Setter Property="CornerRadius" Value="5" />
-			<Setter Property="Padding" Value="5" />
-			<Setter Property="Background" Value="{DynamicResource SystemControlBackgroundBaseLowBrush}" />
-		</Style>
+        <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+        <Style Selector="Border.ContentContainer">
+            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="Padding" Value="5" />
+            <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundBaseLowBrush}" />
+        </Style>
+        <Style Selector="Button.DialogButton">
+            <Setter Property="Margin" Value="5" />
+            <Setter Property="Padding" Value="10" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="FontWeight" Value="Bold" />
+        </Style>
+        <dialogHostAvalonia:DialogHostStyles />
     </Application.Styles>
 
-	<Application.DataTemplates>
-		<local:ViewLocator />
-	</Application.DataTemplates>
+    <Application.DataTemplates>
+        <local:ViewLocator />
+    </Application.DataTemplates>
 </Application>

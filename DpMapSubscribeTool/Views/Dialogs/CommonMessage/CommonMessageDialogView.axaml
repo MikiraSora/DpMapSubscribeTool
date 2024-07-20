@@ -1,0 +1,15 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:commonMessage="clr-namespace:DpMapSubscribeTool.ViewModels.Dialogs.CommonMessage"
+             mc:Ignorable="d" Width="400"
+             x:Class="DpMapSubscribeTool.Views.Dialogs.CommonMessage.CommonMessageDialogView">
+    <Design.DataContext>
+        <commonMessage:CommonMessageDialogViewModel />
+    </Design.DataContext>
+    <StackPanel>
+        <TextBlock Margin="10" TextWrapping="WrapWithOverflow" Text="{Binding Content}" />
+        <Button Classes="DialogButton" Content="关闭" Command="{Binding CloseCommand}" />
+    </StackPanel>
+</UserControl>

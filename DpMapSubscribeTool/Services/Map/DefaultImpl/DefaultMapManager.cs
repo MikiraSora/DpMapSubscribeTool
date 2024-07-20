@@ -50,9 +50,16 @@ public class DefaultMapManager : IMapManager
     {
         while (true)
         {
-            await persistence.Save(translationMapData);
-            logger.LogInformation("TranslationMapData saved.");
-            await Task.Delay(TimeSpan.FromSeconds(15));
+            try
+            {
+                await persistence.Save(translationMapData);
+                logger.LogDebug("TranslationMapData saved.");
+                await Task.Delay(TimeSpan.FromSeconds(15));
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e,$"TranslationMapData failed: {e.Message}");
+            }
         }
     }
 }

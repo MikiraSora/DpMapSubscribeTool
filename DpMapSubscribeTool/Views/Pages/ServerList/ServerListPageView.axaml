@@ -20,7 +20,7 @@
                     <Expander.Content>
                         <StackPanel>
                             <WrapPanel Margin="5">
-                                <Button>全部刷新</Button>
+                                <Button Command="{Binding  RefreshServersCommand}">刷新当前服务器</Button>
                             </WrapPanel>
                         </StackPanel>
                     </Expander.Content>
@@ -45,8 +45,28 @@
                                 <DataGridTextColumn IsReadOnly="True" Header="译名"
                                                     Binding="{Binding Map,Mode=OneWay,Converter={StaticResource GetMapTranslationNameConverter}}" />
                                 <DataGridTextColumn IsReadOnly="True" Header="关卡状态" Binding="{Binding State}" />
-                                <DataGridTextColumn IsReadOnly="True" Header="人数"
-                                                    Binding="{Binding .,Mode=OneWay,Converter={StaticResource DisplayPlayerCountConverter}}" />
+                                <DataGridTemplateColumn IsReadOnly="True" Header="人数">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Label>
+                                                <Label.Content>
+                                                    <MultiBinding
+                                                        Converter="{StaticResource DisplayPlayerCountConverter }">
+                                                        <Binding Path="CurrentPlayerCount" />
+                                                        <Binding Path="MaxPlayerCount" />
+                                                    </MultiBinding>
+                                                </Label.Content>
+                                                <Label.Foreground>
+                                                    <MultiBinding
+                                                        Converter="{StaticResource BrushPlayerCountConverter }">
+                                                        <Binding Path="CurrentPlayerCount" />
+                                                        <Binding Path="MaxPlayerCount" />
+                                                    </MultiBinding>
+                                                </Label.Foreground>
+                                            </Label>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
                                 <DataGridTextColumn IsReadOnly="True" Header="延迟" Binding="{Binding Delay}" />
                                 <DataGridTextColumn IsReadOnly="True" Header="所属社区"
                                                     Binding="{Binding Info.ServerGroupDisplay}" />
@@ -79,8 +99,14 @@
                                 <DataGridTemplateColumn IsReadOnly="True" Header="人数">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <Label
-                                                Content="{Binding .,Mode=OneWay,Converter={StaticResource DisplayPlayerCountConverter}}">
+                                            <Label>
+                                                <Label.Content>
+                                                    <MultiBinding
+                                                        Converter="{StaticResource DisplayPlayerCountConverter }">
+                                                        <Binding Path="CurrentPlayerCount" />
+                                                        <Binding Path="MaxPlayerCount" />
+                                                    </MultiBinding>
+                                                </Label.Content>
                                                 <Label.Foreground>
                                                     <MultiBinding
                                                         Converter="{StaticResource BrushPlayerCountConverter }">
@@ -110,6 +136,10 @@
                                                       Command="{Binding #host.((serverList:ServerListPageViewModel)DataContext).ShowToastCommand}"
                                                       CommandParameter="{Binding .}"
                                                       Header="Show Toast" />
+                                            <MenuItem x:DataType="models:Server"
+                                                      Command="{Binding #host.((serverList:ServerListPageViewModel)DataContext).SqueezeJoinServerCommand}"
+                                                      CommandParameter="{Binding .}"
+                                                      Header="自动挤服" />
                                         </ContextMenu>
                                     </Setter>
                                 </Style>

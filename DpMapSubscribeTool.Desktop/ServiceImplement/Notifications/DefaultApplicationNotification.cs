@@ -9,7 +9,7 @@ using DesktopNotifications;
 using DpMapSubscribeTool.Models;
 using DpMapSubscribeTool.Services.Map;
 using DpMapSubscribeTool.Services.Notifications;
-using DpMapSubscribeTool.Services.Settings;
+using DpMapSubscribeTool.Services.Persistences;
 using DpMapSubscribeTool.Utils;
 using DpMapSubscribeTool.Utils.Injections;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,18 +26,18 @@ public class DefaultApplicationNotification : IApplicationNotification
     private readonly ILogger<DefaultApplicationNotification> logger;
     private readonly IMapManager mapManager;
     private readonly INotificationManager notificationManager;
+    private readonly IPersistence persistence;
 
-    private readonly ISettingManager settingManager;
     private ApplicationSettings applicationSettings;
     private AudioFileReader audioFile;
     private string currentLoadedSoundFilePath;
     private bool isDismissOthers;
     private WaveOutEvent outputDevice;
 
-    public DefaultApplicationNotification(ISettingManager settingManager,
+    public DefaultApplicationNotification(IPersistence persistence,
         ILogger<DefaultApplicationNotification> logger, IMapManager mapManager)
     {
-        this.settingManager = settingManager;
+        this.persistence = persistence;
         this.logger = logger;
         this.mapManager = mapManager;
 
@@ -117,7 +117,7 @@ public class DefaultApplicationNotification : IApplicationNotification
 
     private async void Initialize()
     {
-        applicationSettings = await settingManager.GetSetting<ApplicationSettings>();
+        applicationSettings = await persistence.Load<ApplicationSettings>();
     }
 
     private void NotifyTaskBar(Server server, MapSubscribe subscribe, Action userComfirmCallback)

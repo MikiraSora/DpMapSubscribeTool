@@ -1,21 +1,19 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using Avalonia.Data.Converters;
-using DpMapSubscribeTool.Models;
 
 namespace DpMapSubscribeTool.ValueConverters;
 
-public class DisplayPlayerCountConverter : IValueConverter
+public class DisplayPlayerCountConverter : IMultiValueConverter
 {
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    public object Convert(IList<object> values, Type targetType, object parameter, CultureInfo culture)
     {
-        if (value is not Server server)
-            return "未知";
-        return server.MaxPlayerCount < 0 ? string.Empty : $"{server.CurrentPlayerCount}/{server.MaxPlayerCount}";
-    }
-
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-    {
-        throw new NotImplementedException();
+        if (values.ElementAtOrDefault(0) is not int cur)
+            return string.Empty;
+        if (values.ElementAtOrDefault(1) is not int max)
+            return string.Empty;
+        return max < 0 ? string.Empty : $"{cur}/{max}";
     }
 }

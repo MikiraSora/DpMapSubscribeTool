@@ -13,7 +13,7 @@ namespace DpMapSubscribeTool;
 
 public class App : Application
 {
-    internal IServiceProvider RootServiceProvider { get; private set; }
+    public IServiceProvider RootServiceProvider { get; private set; }
 
     public override void Initialize()
     {
@@ -34,6 +34,7 @@ public class App : Application
         }
 
         var mainViewModel = ActivatorUtilities.CreateInstance<MainViewModel>(RootServiceProvider);
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             desktop.MainWindow = new MainWindow
             {
@@ -44,7 +45,6 @@ public class App : Application
             {
                 DataContext = mainViewModel
             };
-
         base.OnFrameworkInitializationCompleted();
     }
 
@@ -54,14 +54,28 @@ public class App : Application
             throw new Exception("InitServiceProvider() has been called.");
 
         var serviceCollection = new ServiceCollection();
-        serviceCollection.AddLogging(o => { o.SetMinimumLevel(LogLevel.Debug); });
-        serviceCollection.AddKeyedScoped("AppBuild", (provider, o) =>
-        {
-            if (o is string key && key == "AppBuild")
-                return serviceCollection;
-            throw new Exception("Not allow get IServiceCollection objects.");
-        });
 
+        /*
+        //dialog
+        serviceCollection.AddSingleton<IDialogService>(provider =>
+        {
+            var logger = provider.GetService<ILoggerFactory>().CreateLogger<DialogManager>();
+            var viewLocator = new ViewLocator();
+            var dialogFactory = new DialogFactory().AddMessageBox();
+
+            var viewModelFactory = provider.GetService<ViewModelFactory>();
+
+            var dialogService = new DialogService(
+                new DialogManager(viewLocator, dialogFactory, logger),
+                viewModelType => viewModelFactory.CreateViewModel(viewModelType));
+            return dialogService;
+        });
+        */
+
+        //logging
+        serviceCollection.AddLogging(o => { o.SetMinimumLevel(LogLevel.Debug); });
+
+        //others.
         serviceCollection.AddInjectsByAttributes(typeof(App).Assembly);
 
         //add other DI collection from other assemblies.

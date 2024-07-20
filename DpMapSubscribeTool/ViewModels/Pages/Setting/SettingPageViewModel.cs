@@ -3,10 +3,10 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DpMapSubscribeTool.Models;
-using DpMapSubscribeTool.Services.MessageBox;
+using DpMapSubscribeTool.Services.Dialog;
 using DpMapSubscribeTool.Services.Persistences;
+using DpMapSubscribeTool.Services.Servers.DefaultImpl.ServiceGroupImpl.FYS;
 using DpMapSubscribeTool.Services.Servers.DefaultImpl.ServiceGroupImpl.Test;
-using DpMapSubscribeTool.Services.Settings;
 using DpMapSubscribeTool.Utils;
 using Microsoft.Extensions.Logging;
 
@@ -14,30 +14,38 @@ namespace DpMapSubscribeTool.ViewModels.Pages.Setting;
 
 public partial class SettingPageViewModel : PageViewModelBase
 {
+    private readonly IDialogManager dialogManager;
+
+    private readonly IFysServerServiceBase fysServerService;
     private readonly ILogger<SettingPageViewModel> logger;
-    private readonly IApplicationMessageBox messageBox;
     private readonly IPersistence persistence;
-    private readonly ISettingManager settingManager;
-    
-    [ObservableProperty]
-    private ITestServerManager testServerManager;
 
     [ObservableProperty]
     private ApplicationSettings applicationSettings;
+
+    [ObservableProperty]
+    private FysServerSettings fysServerSettings;
+
+    [ObservableProperty]
+    private string fysTestUserNameResult;
+
+    [ObservableProperty]
+    private ITestServerManager testServerManager;
 
     public SettingPageViewModel()
     {
         DesignModeHelper.CheckOnlyForDesignMode();
     }
 
-    public SettingPageViewModel(ISettingManager settingManager, ILogger<SettingPageViewModel> logger,
-        IPersistence persistence, IApplicationMessageBox messageBox, ITestServerManager testServerManager)
+    public SettingPageViewModel(ILogger<SettingPageViewModel> logger,
+        IPersistence persistence, IDialogManager dialogManager, ITestServerManager testServerManager,
+        IFysServerServiceBase fysServerService)
     {
-        this.settingManager = settingManager;
         this.logger = logger;
         this.persistence = persistence;
-        this.messageBox = messageBox;
+        this.dialogManager = dialogManager;
         this.testServerManager = testServerManager;
+        this.fysServerService = fysServerService;
 
         Initialize();
     }
@@ -48,7 +56,8 @@ public partial class SettingPageViewModel : PageViewModelBase
 
     private async void Initialize()
     {
-        ApplicationSettings = await settingManager.GetSetting<ApplicationSettings>();
+        ApplicationSettings = await persistence.Load<ApplicationSettings>();
+        FysServerSettings = await persistence.Load<FysServerSettings>();
     }
 
     [RelayCommand]
@@ -72,22 +81,47 @@ public partial class SettingPageViewModel : PageViewModelBase
         //todo
     }
 
+    private async Task SaveSettingInternal<T>(T obj)
+    {
+        await persistence.Save(obj);
+        logger.LogInformation($"setting {typeof(T).Name} has been saved.");
+    }
+
+    private async Task<T> ResetSettingInternal<T>() where T : new()
+    {
+        var newSetting = new T();
+        await persistence.Save(newSetting);
+        logger.LogInformation($"setting {typeof(T).Name} has been reset.");
+        return await persistence.Load<T>();
+    }
+
     [RelayCommand]
     private async Task SaveSetting()
     {
-        await settingManager.SaveSetting<ApplicationSettings>();
-        logger.LogInformation("ApplicationSettings has been saved.");
-        await messageBox.ShowModalDialog("选项已保存！");
+        await SaveSettingInternal(ApplicationSettings);
+        await SaveSettingInternal(FysServerSettings);
+        await dialogManager.ShowMessageDialog("选项已保存！");
     }
 
     [RelayCommand]
     private async Task ResetSetting()
     {
-        if (!await messageBox.ShowComfirmModalDialog("是否重置选项？"))
+        if (!await dialogManager.ShowComfirmDialog("是否重置选项？"))
             return;
-        await settingManager.ResetSetting<ApplicationSettings>();
-        logger.LogInformation("ApplicationSettings has been reset.");
-        ApplicationSettings = await settingManager.GetSetting<ApplicationSettings>();
-        await messageBox.ShowModalDialog("选项已被重置！(但还没保存)");
+        ApplicationSettings = await ResetSettingInternal<ApplicationSettings>();
+        FysServerSettings = await ResetSettingInternal<FysServerSettings>();
+        await dialogManager.ShowMessageDialog("选项已被重置！");
+    }
+
+    [RelayCommand]
+    private async Task TestFysUid()
+    {
+        if (string.IsNullOrWhiteSpace(FysServerSettings.PlayerName))
+        {
+            await dialogManager.ShowMessageDialog("请先填写玩家名", DialogMessageType.Error);
+            return;
+        }
+
+        FysTestUserNameResult = "玩家名称:" + await fysServerService.CheckUserInvaild(FysServerSettings.PlayerName);
     }
 }

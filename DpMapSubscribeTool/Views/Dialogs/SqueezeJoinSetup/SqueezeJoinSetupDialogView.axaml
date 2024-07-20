@@ -1,0 +1,37 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:DpMapSubscribeTool.ViewModels.Dialogs.SqueezeJoinSetup"
+             mc:Ignorable="d" Width="400"
+             x:Class="DpMapSubscribeTool.Views.Dialogs.SqueezeJoinSetup.SqueezeJoinSetupDialogView">
+    <Design.DataContext>
+        <vm:SqueezeJoinSetupDialogViewModel />
+    </Design.DataContext>
+    <StackPanel>
+        <StackPanel Margin="0,5" Orientation="Horizontal">
+            <Label Content="自动 查询/挤服 频率:" VerticalAlignment="Center" />
+            <TextBox Margin="5,0" Width="100" Text="{Binding Option.TryJoinInterval}" />
+            <Label Content="秒/次" VerticalAlignment="Center" />
+        </StackPanel>
+        <StackPanel Margin="0,5,0,0" Orientation="Horizontal">
+            <Label Content="距满服相差 " VerticalAlignment="Center" />
+            <TextBox Margin="5,0" Width="100" Text="{Binding Option.SqueezeTargetPlayerCountDiff}" />
+            <Label Content="人时，就尝试自动加入服务器" VerticalAlignment="Center" />
+        </StackPanel>
+        <StackPanel Margin="0,5,0,0" Orientation="Horizontal">
+            <CheckBox Content="挤服成功后通知用户" Margin="5,0" FlowDirection="RightToLeft"
+                      IsChecked="{Binding Option.NotifyIfSuccess}" />
+        </StackPanel>
+        <StackPanel Margin="0,5" Orientation="Horizontal">
+            <CheckBox Content="挤服成功后让游戏切换到前台显示" Margin="5,0" FlowDirection="RightToLeft"
+                      IsChecked="{Binding Option.MakeGameForegroundIfSuccess}" />
+        </StackPanel>
+
+        <Grid ColumnDefinitions="3*,1*">
+            <Button Content="开始执行！" Command="{Binding ComfirmCommand}"
+                    Classes="DialogButton" />
+            <Button Grid.Column="1" Content="取消" Classes="DialogButton" Command="{Binding CancelCommand}" />
+        </Grid>
+    </StackPanel>
+</UserControl>

@@ -4,6 +4,8 @@ namespace DpMapSubscribeTool.Models;
 
 public abstract partial class Server : ObservableObject
 {
+    private static int genId;
+
     [ObservableProperty]
     private int currentPlayerCount;
 
@@ -22,5 +24,10 @@ public abstract partial class Server : ObservableObject
     [ObservableProperty]
     private string state;
 
-    public override string ToString() => Info.ToString();
+    public int Id { get; } = genId++;
+
+    public override string ToString()
+    {
+        return $"{Id} {Info}";
+    }
 }

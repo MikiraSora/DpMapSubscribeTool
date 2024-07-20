@@ -2,17 +2,21 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Net;
 using System.Net.NetworkInformation;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using DpMapSubscribeTool.Models;
+using DpMapSubscribeTool.Services.Dialog;
 using DpMapSubscribeTool.Services.Notifications;
-using DpMapSubscribeTool.Services.Settings;
+using DpMapSubscribeTool.Services.Persistences;
 using DpMapSubscribeTool.Utils.Injections;
 using DpMapSubscribeTool.Utils.MethodExtensions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using SteamQuery;
 
 namespace DpMapSubscribeTool.Services.Servers.DefaultImpl;
 
@@ -20,12 +24,15 @@ namespace DpMapSubscribeTool.Services.Servers.DefaultImpl;
 public partial class DefaultServerManager : ObservableObject, IServerManager
 {
     private readonly IApplicationNotification applicationNotification;
+    private readonly IDialogManager dialogManager;
     private readonly ILogger<DefaultServerManager> logger;
+
+    private readonly IPersistence persistence;
 
     private readonly Dictionary<string, IServerActionExecutor> serverExecutors;
     private readonly Dictionary<string, IServerInfoSearcher> serverSearchers;
     private readonly Dictionary<string, IServerStateUpdater> serverUpdaters;
-    private readonly ISettingManager settingManager;
+    private readonly Dictionary<string, IServerSqueezeJoinRunner> squeezeJoinRunners;
 
     private ApplicationSettings applicationSetting;
 
@@ -38,6 +45,8 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
     [ObservableProperty]
     private ObservableCollection<Server> servers = new();
 
+    private CancellationTokenSource squeezeCancellationTokenSource;
+
     [ObservableProperty]
     private ObservableCollection<Server> subscribeServers = new();
 
@@ -45,16 +54,20 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
         ILogger<DefaultServerManager> logger,
         IEnumerable<IServerInfoSearcher> serverSearchers,
         IEnumerable<IServerStateUpdater> serverUpdaters,
-        ISettingManager settingManager,
+        IEnumerable<IServerSqueezeJoinRunner> squeezeJoinRunners,
+        IPersistence persistence,
+        IDialogManager dialogManager,
         IApplicationNotification applicationNotification,
         IEnumerable<IServerActionExecutor> serverExecutors)
     {
         this.logger = logger;
-        this.settingManager = settingManager;
+        this.persistence = persistence;
+        this.dialogManager = dialogManager;
         this.applicationNotification = applicationNotification;
         this.serverUpdaters = serverUpdaters.ToDictionary(x => x.ServerGroup, x => x);
         this.serverExecutors = serverExecutors.ToDictionary(x => x.ServerGroup, x => x);
         this.serverSearchers = serverSearchers.ToDictionary(x => x.ServerGroup, x => x);
+        this.squeezeJoinRunners = squeezeJoinRunners.ToDictionary(x => x.ServerGroup, x => x);
 
         Initialize();
     }
@@ -146,6 +159,102 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
         ProcessMapChangedServers(mapChangedList);
     }
 
+    public async Task SqueezeJoinServer(ServerInfo serverInfo, SqueezeJoinServerOption option)
+    {
+        //stop current running
+        if (squeezeCancellationTokenSource != null)
+        {
+            logger.LogInformation("cancel current squeeze-join task.");
+            squeezeCancellationTokenSource.Cancel();
+            squeezeCancellationTokenSource = default;
+        }
+
+        //run new
+        squeezeCancellationTokenSource = new CancellationTokenSource();
+        await Task.Run(() => OnSqueezeJoinServerTask(serverInfo, option, squeezeCancellationTokenSource.Token));
+    }
+
+    private async Task OnSqueezeJoinServerTask(ServerInfo serverInfo, SqueezeJoinServerOption option,
+        CancellationToken cancellationToken)
+    {
+        logger.LogInformation("OnSqueezeJoinServerTask() started.");
+        logger.LogInformation($"option.SqueezeTargetPlayerCountDiff={option.SqueezeTargetPlayerCountDiff}");
+        logger.LogInformation($"option.MakeGameForegroundIfSuccess={option.MakeGameForegroundIfSuccess}");
+        logger.LogInformation($"option.TryJoinInterval={option.TryJoinInterval}");
+        logger.LogInformation($"option.NotifyIfSuccess={option.NotifyIfSuccess}");
+        logger.LogInformation($"serverInfo.Name={serverInfo.Name}");
+        logger.LogInformation($"serverInfo.EndPointDescription={serverInfo.EndPointDescription}");
+        logger.LogInformation($"serverInfo.ServerGroup={serverInfo.ServerGroup}");
+
+        var runner = PickServiceService(squeezeJoinRunners, serverInfo);
+        if (runner == null)
+        {
+            logger.LogError("No squeeze-join runner.");
+            await dialogManager.ShowMessageDialog("无法执行挤服功能，应用并未支持此社区服务器", DialogMessageType.Error);
+            goto End;
+        }
+
+        if (!await runner.CheckSqueezeJoinServer(serverInfo, option, cancellationToken))
+        {
+            logger.LogError("CheckSqueezeJoinServer() return false.");
+            goto End;
+        }
+
+        var timeInterval = TimeSpan.FromSeconds(option.TryJoinInterval);
+
+        var ipList = await Dns.GetHostAddressesAsync(serverInfo.Host, cancellationToken);
+        if (ipList.Length == 0)
+        {
+            logger.LogError($"Can't lookup ip address for host name:{serverInfo.Host}");
+            await dialogManager.ShowMessageDialog($"无法执行挤服功能，无法获取服务器ip地址({serverInfo.Host})", DialogMessageType.Error);
+            goto End;
+        }
+
+        var ipAddr = ipList.First();
+        var gameServer = new GameServer($"{ipAddr}:{serverInfo.Port}");
+
+        var diff = option.SqueezeTargetPlayerCountDiff;
+
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            //get current player count
+            var info = await gameServer.GetInformationAsync(cancellationToken);
+            var currentPlayerCount = info.OnlinePlayers;
+
+            logger.LogInformation(
+                $"currentPlayerCount({currentPlayerCount}) <= ({info.MaxPlayers - diff}) maxPlayerCount({info.MaxPlayers}) - diff({diff}).");
+            if (currentPlayerCount <= info.MaxPlayers - diff)
+            {
+                //join
+                await JoinServer(serverInfo);
+                //wait
+                await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
+                if (cancellationToken.IsCancellationRequested)
+                    continue;
+                //check
+                var players = (await gameServer.GetPlayersAsync(cancellationToken)).Select(x => x.Name).ToList();
+                if (await runner.IsUserInServer(players, cancellationToken))
+                {
+                    logger.LogInformation("squeeze-join server successfully.");
+                    break;
+                }
+
+                logger.LogInformation("squeeze-join server failed, try again.");
+            }
+
+            await Task.Delay(timeInterval, cancellationToken);
+        }
+
+        End:
+        squeezeCancellationTokenSource = default;
+        logger.LogInformation("OnSqueezeJoinServerTask() finished.");
+    }
+
+    private async Task<bool> IsUserInServer(GameServer gameServer, CancellationToken cancellationToken)
+    {
+        return false;
+    }
+
     private void ProcessMapChangedServers(List<Server> mapChangedList)
     {
         var rules = applicationSetting.UserMapSubscribes;
@@ -154,8 +263,9 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
             .Where(x => x.Item2 != null)
             .ToArray();
 
-        logger.LogInformation(
-            $"ProcessMapChangedServers() there are {filterServers.Length} servers match subscribe rules in same time: {string.Join(",", filterServers.Select(x => x.x.Map))}");
+        if (mapChangedList.Count > 0)
+            logger.LogInformation(
+                $"ProcessMapChangedServers() there are {filterServers.Length} servers match subscribe rules in same time: {string.Join(",", filterServers.Select(x => x.x.Map))}");
 
         foreach (var (server, rule) in filterServers)
             applicationNotification.NofityServerForSubscribeMap(server, rule, () => JoinServer(server.Info).NoWait());
@@ -177,16 +287,16 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
 
     private async void Initialize()
     {
-        applicationSetting = await settingManager.GetSetting<ApplicationSettings>();
+        applicationSetting = await persistence.Load<ApplicationSettings>();
         autoPingTimeInterval = TimeSpan.FromSeconds(applicationSetting.AutoPingTimeInterval);
         autoRefreshTimeInterval = TimeSpan.FromSeconds(applicationSetting.AutoRefreshTimeInterval);
 
-        UpdateSubscribeServers();
+        //UpdateSubscribeServers();
         Task.Run(OnAutoPingAllServersTask).NoWait();
         Task.Run(OnAutoUpdateCurrentExistServersTask).NoWait();
     }
 
-    private void UpdateSubscribeServers()
+    private async void UpdateSubscribeServers()
     {
         if (applicationSetting is null)
         {
@@ -213,7 +323,7 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
             await UpdateCurrentExistServers();
             //await RefreshServers();
 
-            logger.LogInformation("updated all servers.");
+            logger.LogDebug("updated all servers.");
             await Task.Delay(autoPingTimeInterval);
         }
     }
@@ -223,17 +333,22 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
         var servers = Servers.ToArray();
         var oldMaps = servers.ToDictionary(x => x.Info.EndPointDescription, x => x.Map);
 
-        var updateTasks = servers.Select(x =>
+        var updateTasks = servers.Select(async x =>
         {
             var updater = PickServiceService(serverUpdaters, x);
-            return updater?.UpdateServer(x);
+            var before = x.CurrentPlayerCount;
+            await updater?.UpdateServer(x);
+            if (before != x.CurrentPlayerCount)
+                logger.LogInformation(
+                    $"server {x.Info.Name} playercount {before} -> {x.CurrentPlayerCount}");
         }).ToArray();
 
         await Task.WhenAll(updateTasks);
 
         var mapChangedServers = servers.Where(x =>
             oldMaps.TryGetValue(x.Info.EndPointDescription, out var oldMapName) && oldMapName != x.Map).ToList();
-        
+
+        await Dispatcher.UIThread.InvokeAsync(UpdateSubscribeServers);
         ProcessMapChangedServers(mapChangedServers);
     }
 
@@ -244,7 +359,7 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
         while (true)
         {
             await PingAllServers();
-            logger.LogInformation("ping all servers.");
+            logger.LogDebug("ping all servers.");
             await Task.Delay(autoPingTimeInterval);
         }
     }

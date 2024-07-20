@@ -1,3 +1,1 @@
-﻿using System;
-
-namespace DpMapSubscribeTool.Utils.Injections;
+﻿namespace DpMapSubscribeTool.Utils.Injections;

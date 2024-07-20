@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Encodings.Web;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using DpMapSubscribeTool.Services.MessageBox;
+using DpMapSubscribeTool.Services.Dialog;
 using DpMapSubscribeTool.Services.Persistences;
+using DpMapSubscribeTool.Utils;
 using DpMapSubscribeTool.Utils.Injections;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -16,41 +16,46 @@ namespace DpMapSubscribeTool.Desktop.ServiceImplement.Persistences;
 [RegisterInjectable(typeof(IPersistence), ServiceLifetime.Singleton)]
 public class DesktopPersistence : IPersistence
 {
+    private readonly IDialogManager dialogManager;
     private readonly object locker = new();
     private readonly ILogger<DesktopPersistence> logger;
-    private readonly IApplicationMessageBox messageBox;
     private readonly IServiceProvider provider;
     private readonly string savePath;
 
     private readonly JsonSerializerOptions serializerOptions = new()
     {
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-        UnknownTypeHandling = JsonUnknownTypeHandling.JsonElement,
         WriteIndented = true
     };
 
-    private Dictionary<string, object> settingMap;
+    private Dictionary<string, string> settingMap;
 
     public DesktopPersistence(IServiceProvider provider, ILogger<DesktopPersistence> logger,
-        IApplicationMessageBox messageBox)
+        IDialogManager dialogManager)
     {
         this.provider = provider;
         this.logger = logger;
-        this.messageBox = messageBox;
+        this.dialogManager = dialogManager;
         savePath = Path.Combine(Path.GetDirectoryName(typeof(DesktopPersistence).Assembly.Location) ?? string.Empty,
             "setting.json");
     }
 
     public async Task Save<T>(T obj)
     {
-        var key = GetKey<T>();
-
-        settingMap[key] = obj;
-        var content = JsonSerializer.Serialize(settingMap, serializerOptions);
+#if DEBUG
+        if (DesignModeHelper.IsDesignMode)
+            return;
+#endif
+        
         await Task.Run(() =>
         {
             lock (locker)
             {
+                var key = GetKey<T>();
+
+                settingMap[key] = JsonSerializer.Serialize(obj, serializerOptions);
+                var content = JsonSerializer.Serialize(settingMap, serializerOptions);
+
                 File.WriteAllText(savePath, content);
             }
         });
@@ -73,32 +78,28 @@ public class DesktopPersistence : IPersistence
                     }
                 });
                 if (string.IsNullOrWhiteSpace(content))
-                    settingMap = new Dictionary<string, object>();
+                    settingMap = new Dictionary<string, string>();
                 else
                     try
                     {
-                        settingMap = JsonSerializer.Deserialize<Dictionary<string, object>>(content, serializerOptions);
+                        settingMap = JsonSerializer.Deserialize<Dictionary<string, string>>(content, serializerOptions);
                     }
                     catch (Exception e)
                     {
                         logger.LogError(e, $"Can't load setting.json : {e.Message}");
-                        //todo.
-                        await messageBox.ShowModalDialog($"无法加载应用配置文件setting.json:{e.Message}",
+                        await dialogManager.ShowMessageDialog($"无法加载应用配置文件setting.json:{e.Message}",
                             DialogMessageType.Error);
                         Environment.Exit(-1);
                     }
             }
             else
             {
-                settingMap = new Dictionary<string, object>();
+                settingMap = new Dictionary<string, string>();
             }
         }
 
         if (settingMap.TryGetValue(key, out var jsonContent))
-        {
-            var node = (JsonElement) jsonContent;
-            return node.Deserialize<T>();
-        }
+            return JsonSerializer.Deserialize<T>(jsonContent);
 
         return ActivatorUtilities.CreateInstance<T>(provider);
     }

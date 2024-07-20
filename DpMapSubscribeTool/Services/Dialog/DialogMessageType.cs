@@ -1,4 +1,4 @@
-﻿namespace DpMapSubscribeTool.Services.MessageBox;
+﻿namespace DpMapSubscribeTool.Services.Dialog;
 
 public enum DialogMessageType
 {

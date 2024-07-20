@@ -1,0 +1,19 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:dialogs1="clr-namespace:DpMapSubscribeTool.ViewModels.Dialogs"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             Background="Transparent"
+             x:Class="DpMapSubscribeTool.Views.Dialogs.TemplateDialogView">
+    <Design.DataContext>
+        <dialogs1:DialogViewModelBase />
+    </Design.DataContext>
+    <Border>
+        <StackPanel>
+            <Label Margin="5" FontSize="25" FontWeight="Bold" Content="{Binding MainPageContent.Title}" />
+            <Rectangle Height="2" Fill="{DynamicResource SystemControlBackgroundBaseLowBrush}" />
+            <ContentControl Margin="5" Content="{Binding MainPageContent}" />
+        </StackPanel>
+    </Border>
+</UserControl>

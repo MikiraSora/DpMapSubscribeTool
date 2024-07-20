@@ -13,7 +13,6 @@ using System.Linq;
 using DpMapSubscribeTool.Services.Persistences;
 using DpMapSubscribeTool.Services.Notifications;
 using DpMapSubscribeTool.Services.Servers;
-using DpMapSubscribeTool.Services.Settings;
 using DpMapSubscribeTool.ViewModels.Pages.Home;
 using DpMapSubscribeTool.ViewModels.Pages.ServerList;
 using DpMapSubscribeTool.ViewModels.Pages.Setting;
