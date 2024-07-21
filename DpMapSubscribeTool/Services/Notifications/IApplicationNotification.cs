@@ -9,6 +9,7 @@ public interface IApplicationNotification
 {
     void NofityServerForSubscribeMap(Server server, MapSubscribe subscribe, Action<UserReaction> userComfirmCallback);
     void NofitySqueezeJoinSuccess(ServerInfo serverInfo, Action<UserReaction> userComfirmCallback);
+    Task PlaySound();
 
     Task<UserReaction> NofityServerForSubscribeMap(Server server, MapSubscribe subscribe)
     {

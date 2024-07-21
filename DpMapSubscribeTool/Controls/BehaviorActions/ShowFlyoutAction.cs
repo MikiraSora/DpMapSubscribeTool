@@ -7,13 +7,26 @@ namespace DpMapSubscribeTool.Controls.BehaviorActions;
 
 public class ShowFlyoutAction : AvaloniaObject, IAction
 {
+    public static readonly StyledProperty<Control> FlyoutAttachedControlProperty =
+        AvaloniaProperty.Register<ShowFlyoutAction, Control>(nameof(FlyoutAttachedControl));
+
+    public Control FlyoutAttachedControl
+    {
+        get => GetValue(FlyoutAttachedControlProperty);
+        set => SetValue(FlyoutAttachedControlProperty, value);
+    }
+
     public object Execute(object sender, object parameter)
     {
-        if (sender is not Control attachedControl)
-            return false;
+        return TryFindFlyoutOpen(FlyoutAttachedControl) || TryFindFlyoutOpen(sender as Control);
+    }
 
-        var flyout = attachedControl.GetValue(FlyoutBase.AttachedFlyoutProperty);
-        flyout?.ShowAt(attachedControl);
+    private bool TryFindFlyoutOpen(Control control)
+    {
+        var flyout = control?.GetValue(FlyoutBase.AttachedFlyoutProperty);
+        if (flyout is null)
+            return false;
+        flyout.ShowAt(control);
         return true;
     }
 }

@@ -3,4 +3,5 @@
 public interface IServerServiceBase
 {
     string ServerGroup { get; }
+    string ServerGroupDescription { get; }
 }

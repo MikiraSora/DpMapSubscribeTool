@@ -5,16 +5,18 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks;
 using DesktopNotifications;
+using DpMapSubscribeTool.Desktop.Utils;
 using DpMapSubscribeTool.Models;
 using DpMapSubscribeTool.Services.Map;
 using DpMapSubscribeTool.Services.Notifications;
 using DpMapSubscribeTool.Services.Persistences;
 using DpMapSubscribeTool.Utils;
 using DpMapSubscribeTool.Utils.Injections;
+using DpMapSubscribeTool.Utils.MethodExtensions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using NAudio.Wave;
 
 namespace DpMapSubscribeTool.Desktop.ServiceImplement.Notifications;
 
@@ -27,19 +29,21 @@ public class DefaultApplicationNotification : IApplicationNotification
     private readonly IMapManager mapManager;
     private readonly INotificationManager notificationManager;
     private readonly IPersistence persistence;
+    private readonly IServiceProvider serviceProvider;
 
     private ApplicationSettings applicationSettings;
-    private AudioFileReader audioFile;
     private string currentLoadedSoundFilePath;
+    private SimpleSoundPlayer defualtSoundPlayer;
     private bool isDismissOthers;
-    private WaveOutEvent outputDevice;
+    private SimpleSoundPlayer userSpecifySoundPlayer;
 
     public DefaultApplicationNotification(IPersistence persistence,
-        ILogger<DefaultApplicationNotification> logger, IMapManager mapManager)
+        ILogger<DefaultApplicationNotification> logger, IMapManager mapManager, IServiceProvider serviceProvider)
     {
         this.persistence = persistence;
         this.logger = logger;
         this.mapManager = mapManager;
+        this.serviceProvider = serviceProvider;
 
         notificationManager = Program.NotificationManager;
         notificationManager.NotificationActivated += OnNotificationActivated;
@@ -60,7 +64,7 @@ public class DefaultApplicationNotification : IApplicationNotification
         }
 
         if (applicationSettings.EnableNoticationBySound)
-            PlaySound();
+            PlaySound().NoWait();
         if (applicationSettings.EnableNoticationByTaskbar)
             NotifySqueezeJoinServerSuccessTaskBar(server, subscribe, userComfirmCallback);
     }
@@ -77,9 +81,17 @@ public class DefaultApplicationNotification : IApplicationNotification
         }
 
         if (applicationSettings.EnableNoticationBySound)
-            PlaySound();
+            PlaySound().NoWait();
         if (applicationSettings.EnableNoticationByTaskbar)
             NotifySqueezeJoinServerSuccessTaskBar(serverInfo, userComfirmCallback);
+    }
+
+    public async Task PlaySound()
+    {
+        await PrepareAudio();
+
+        var soundPlayer = userSpecifySoundPlayer ?? defualtSoundPlayer;
+        soundPlayer?.PlaySound();
     }
 
     private void DismissAllAndClear()
@@ -147,6 +159,22 @@ public class DefaultApplicationNotification : IApplicationNotification
             return; //NOT SUPPORT IN DESIGN MODE
 #endif
         applicationSettings = await persistence.Load<ApplicationSettings>();
+
+        //load default
+        var defaultSoundFilePath = TempFileHelper.GetTempFilePath("sound", "notification", ".mp3", false);
+        if (!File.Exists(defaultSoundFilePath))
+        {
+            await using var rs =
+                typeof(Program).Assembly.GetManifestResourceStream(
+                    "DpMapSubscribeTool.Desktop.Resources.notification.mp3");
+            await using var fs = File.OpenWrite(defaultSoundFilePath);
+            await rs.CopyToAsync(fs);
+            logger.LogInformationEx(
+                $"file {applicationSettings.NoticationSoundFilePath} is not found,extract resource notication.mp3 to {defaultSoundFilePath} and use.");
+        }
+
+        defualtSoundPlayer = ActivatorUtilities.CreateInstance<SimpleSoundPlayer>(serviceProvider);
+        await defualtSoundPlayer.LoadAudioFile(defaultSoundFilePath);
     }
 
     private void CreateCommonNotifyTaskBar(string title, string content, string buttonText,
@@ -202,65 +230,29 @@ public class DefaultApplicationNotification : IApplicationNotification
 
         bool check(string processName)
         {
-            return Process.GetProcessesByName(processName).Any(proc => proc.Id == foregroundPid);
+            var result = Process.GetProcessesByName(processName).Any(proc => proc.Id == foregroundPid);
+            if (result)
+                logger.LogInformationEx($"process name {processName} is foreground.");
+            return result;
         }
     }
 
-    private void PlaySound()
+    private async Task PrepareAudio()
     {
-        PrepareAudio();
-
-        outputDevice?.Stop();
-        audioFile?.Seek(0, SeekOrigin.Begin);
-        outputDevice?.Play();
-    }
-
-    private void PrepareAudio()
-    {
-        if (audioFile == null)
-        {
-            //check file changed.
-            if (currentLoadedSoundFilePath == applicationSettings.NoticationSoundFilePath)
+        if (currentLoadedSoundFilePath == applicationSettings.NoticationSoundFilePath)
+            if (userSpecifySoundPlayer != null)
                 return;
 
-            audioFile?.Dispose();
-            outputDevice?.Dispose();
-        }
+        userSpecifySoundPlayer?.Dispose();
+        userSpecifySoundPlayer = default;
 
-        try
-        {
-            var filePath = applicationSettings.NoticationSoundFilePath;
-            if (!File.Exists(filePath))
-            {
-                filePath = TempFileHelper.GetTempFilePath("sound", "notification", ".mp3", false);
-                //unzip default sound to temp path.
-                using var rs =
-                    typeof(Program).Assembly.GetManifestResourceStream(
-                        "DpMapSubscribeTool.Desktop.Resources.notification.mp3");
-                using var fs = File.OpenWrite(filePath);
-                rs.CopyTo(fs);
-                logger.LogInformationEx(
-                    $"file {applicationSettings.NoticationSoundFilePath} is not found,extract resource notication.mp3 to {filePath} and use.");
-            }
+        currentLoadedSoundFilePath = applicationSettings.NoticationSoundFilePath;
+        if (string.IsNullOrWhiteSpace(currentLoadedSoundFilePath))
+            return;
 
-            audioFile = new AudioFileReader(filePath);
-            outputDevice = new WaveOutEvent();
-            outputDevice.Init(audioFile);
+        userSpecifySoundPlayer = ActivatorUtilities.CreateInstance<SimpleSoundPlayer>(serviceProvider);
+        await userSpecifySoundPlayer.LoadAudioFile(currentLoadedSoundFilePath);
 
-            currentLoadedSoundFilePath = filePath;
-            logger.LogInformationEx($"loaded sound file for notification: {currentLoadedSoundFilePath}");
-        }
-        catch (Exception ex)
-        {
-            logger.LogErrorEx(ex, $"Can't prepare sound for notification: {ex.Message}");
-            currentLoadedSoundFilePath = default;
-        }
+        logger.LogInformationEx($"load sound file by user require: {currentLoadedSoundFilePath}");
     }
-
-    ~DefaultApplicationNotification()
-    {
-        //ToastNotificationManagerCompat.Uninstall();
-    }
-
-    private record JoinActionInfo(string Host, int Port);
 }

@@ -6,9 +6,11 @@ namespace DpMapSubscribeTool.Services.Servers;
 
 public interface IServerManager
 {
+    ServerListFilterOptions CurrentServerListFilterOptions { get; }
     SqueezeJoinTaskStatus CurrentSqueezeJoinTaskStatus { get; }
 
     ObservableCollection<Server> Servers { get; }
+    ObservableCollection<Server> FilterServers { get; }
     ObservableCollection<Server> SubscribeServers { get; }
     bool IsDataReady { get; }
 
@@ -34,4 +36,7 @@ public interface IServerManager
     }
 
     Task StopSqueezeJoinServerTask();
+
+    Task RefreshFilterServers();
+    Task ResetServerListFilterOptions();
 }

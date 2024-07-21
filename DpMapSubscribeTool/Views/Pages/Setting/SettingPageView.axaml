@@ -3,12 +3,12 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:DpMapSubscribeTool.ViewModels.Pages.Setting"
+             xmlns:models="clr-namespace:DpMapSubscribeTool.Models"
              mc:Ignorable="d" d:DesignWidth="800"
              x:Class="DpMapSubscribeTool.Views.Pages.Setting.SettingPageView">
     <Design.DataContext>
         <vm:SettingPageViewModel />
     </Design.DataContext>
-
     <Grid RowDefinitions="Auto,*">
         <StackPanel>
             <Border Padding="5" Background="{DynamicResource SystemControlBackgroundBaseLowBrush}">
@@ -71,6 +71,21 @@
                                 </DataGridTemplateColumn>
                                 <DataGridTextColumn MinWidth="100" Header="过滤内容" Binding="{Binding MatchContent}" />
                             </DataGrid.Columns>
+                            <DataGrid.Styles>
+                                <Style Selector="DataGridCell Rectangle">
+                                    <Setter Property="IsVisible" Value="False" />
+                                </Style>
+                                <Style Selector="DataGridRow">
+                                    <Setter Property="ContextMenu">
+                                        <ContextMenu>
+                                            <MenuItem x:DataType="models:MapSubscribe"
+                                                      Command="{Binding #host.((vm:SettingPageViewModel)DataContext).DeleteMapSubscribeCommand}"
+                                                      CommandParameter="{Binding .}"
+                                                      Header="删除" />
+                                        </ContextMenu>
+                                    </Setter>
+                                </Style>
+                            </DataGrid.Styles>
                         </DataGrid>
                     </StackPanel>
                 </Border>
@@ -116,6 +131,9 @@
                                             IsVisible="{Binding ApplicationSettings.EnableNoticationBySound}">
                                     <Label VerticalAlignment="Center" Content="指定音效文件(不填则使用默认音效):" />
                                     <TextBox Width="300" Text="{Binding ApplicationSettings.NoticationSoundFilePath}" />
+                                    <Button Content="播放提醒音效" Margin="10,0" VerticalAlignment="Stretch" Padding="10,0"
+                                            VerticalContentAlignment="Center"
+                                            Command="{Binding PlayNotificationSoundCommand }" />
                                 </StackPanel>
                                 <CheckBox Content="允许使用通知栏提醒"
                                           IsChecked="{Binding ApplicationSettings.EnableNoticationByTaskbar}" />

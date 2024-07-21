@@ -1,25 +1,25 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
+using DpMapSubscribeTool.Utils;
 using Microsoft.Extensions.Logging;
 
 namespace DpMapSubscribeTool.Desktop.Utils.Logging;
 
 public class FileLogger : ILogger
 {
-    private readonly object _lock = new();
-    private readonly string categoryName;
+    private static readonly object locker = new();
     private readonly string[] filePathList;
     private readonly string simpliedCategoryName;
     private readonly DateTime startTime;
 
     public FileLogger(string categoryName, string[] filePathList, DateTime startTime)
     {
-        this.categoryName = categoryName;
         this.filePathList = filePathList;
         this.startTime = startTime;
-        simpliedCategoryName = this.categoryName.Split(".").LastOrDefault();
+        simpliedCategoryName = categoryName.Split(".").LastOrDefault();
     }
 
     public IDisposable BeginScope<TState>(TState state)
@@ -35,6 +35,11 @@ public class FileLogger : ILogger
     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception,
         Func<TState, Exception, string> formatter)
     {
+#if DEBUG
+        if (DesignModeHelper.IsDesignMode)
+            return;
+#endif
+
         if (!IsEnabled(logLevel))
             return;
 
@@ -58,11 +63,41 @@ public class FileLogger : ILogger
 
         var logRecord =
             $"{overDaysStr}{now:HH:mm:ss.fff} {levelStr}:{eventIdStr}:{threadIdStr} [{simpliedCategoryName}] {formatter(state, exception)}{Environment.NewLine}";
+        if (logLevel == LogLevel.Error && exception is not null)
+        {
+            var fullExceptionStack = BuildExceptionMessageContent(exception);
+            logRecord += $"--------------------------{Environment.NewLine}";
+            logRecord += $"print full exception info{Environment.NewLine}";
+            logRecord += fullExceptionStack;
+            logRecord += $"--------------------------{Environment.NewLine}";
+        }
 
-        lock (_lock)
+        lock (locker)
         {
             foreach (var filePath in filePathList)
                 File.AppendAllText(filePath, logRecord);
         }
+    }
+
+    private string BuildExceptionMessageContent(Exception e)
+    {
+        var sb = new StringBuilder();
+
+        void exceptionDump(Exception e, int level = 0)
+        {
+            if (e is null)
+                return;
+            var tab = string.Concat(Enumerable.Repeat("\t", 2 * level));
+
+            sb.AppendLine();
+            sb.AppendLine(tab + $"Exception lv.{level} : {e.Message}");
+            sb.AppendLine(tab + $"Stack : {e.StackTrace}");
+
+            exceptionDump(e.InnerException, level + 1);
+        }
+
+        exceptionDump(e);
+
+        return sb.ToString();
     }
 }

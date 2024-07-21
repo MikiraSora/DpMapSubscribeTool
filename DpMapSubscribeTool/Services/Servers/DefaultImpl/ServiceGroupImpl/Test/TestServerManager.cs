@@ -62,6 +62,7 @@ public partial class TestServerManager : ObservableObject, IServerInfoSearcher, 
     }
 
     public string ServerGroup => "Test";
+    public string ServerGroupDescription => "测试";
 
     public Task<IEnumerable<ServerInfo>> GetAllAvaliableServerInfo()
     {

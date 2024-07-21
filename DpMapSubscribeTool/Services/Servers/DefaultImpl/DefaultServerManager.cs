@@ -41,7 +41,13 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
     private TimeSpan autoRefreshTimeInterval;
 
     [ObservableProperty]
+    private ServerListFilterOptions currentServerListFilterOptions;
+
+    [ObservableProperty]
     private SqueezeJoinTaskStatus currentSqueezeJoinTaskStatus;
+
+    [ObservableProperty]
+    private ObservableCollection<Server> filterServers = new();
 
     [ObservableProperty]
     private bool isDataReady;
@@ -156,6 +162,7 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
             }
 
             UpdateSubscribeServers();
+            RefreshFilterServers();
         });
 
         logger.LogInformationEx($"RefreshServers() {Servers.Count} servers updated.");
@@ -188,6 +195,45 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
             ClearSqueezeJoinServer();
         }
 
+        return Task.CompletedTask;
+    }
+
+    public Task RefreshFilterServers()
+    {
+        FilterServers.Clear();
+
+        if (CurrentServerListFilterOptions.IsEnable)
+        {
+            var servers = Servers.AsEnumerable();
+            if (CurrentServerListFilterOptions.IsEnableDelayFilter)
+                servers = servers.Where(x => x.Delay <= CurrentServerListFilterOptions.FilterDelay);
+            if (CurrentServerListFilterOptions.IsEnablePlayerCountRemainFilter)
+                servers = servers.Where(x =>
+                    x.MaxPlayerCount - x.CurrentPlayerCount >=
+                    CurrentServerListFilterOptions.FilterPlayerCountRemain);
+            if (CurrentServerListFilterOptions.IsEnableKeywordFilter)
+                servers = servers.Where(x =>
+                {
+                    var keywordContent = string.Join(" ", x.Map);
+                    return keywordContent.Contains(CurrentServerListFilterOptions.FilterKeyword,
+                        StringComparison.InvariantCultureIgnoreCase);
+                });
+
+            if (CurrentServerListFilterOptions.IsEnableServerGroupFilter)
+            {
+                var enableSet = CurrentServerListFilterOptions.ServerGroupFilters
+                    .Where(x => x.IsEnable)
+                    .Select(x => x.ServiceGroup)
+                    .ToHashSet();
+                servers = servers.Where(x => enableSet.Contains(x.Info.ServerGroup));
+            }
+
+            var filterResult = servers.ToArray();
+            foreach (var server in filterResult)
+                FilterServers.Add(server);
+        }
+
+        logger.LogInformationEx("filter server list has been refresh.");
         return Task.CompletedTask;
     }
 
@@ -342,9 +388,29 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
         autoPingTimeInterval = TimeSpan.FromSeconds(applicationSetting.AutoPingTimeInterval);
         autoRefreshTimeInterval = TimeSpan.FromSeconds(applicationSetting.AutoRefreshTimeInterval);
 
+        ResetServerListFilterOptions().NoWait();
+
         //UpdateSubscribeServers();
         Task.Run(OnAutoPingAllServersTask).NoWait();
         Task.Run(OnAutoUpdateCurrentExistServersTask).NoWait();
+    }
+
+    public Task ResetServerListFilterOptions()
+    {
+        var newOption = new ServerListFilterOptions();
+
+        foreach (var (serverGroup, serverGroupDescription) in serverSearchers.Values.Select(x =>
+                     (x.ServerGroup, x.ServerGroupDescription)))
+            newOption.ServerGroupFilters.Add(new ServerGroupFilter
+            {
+                ServiceGroupDescription = serverGroupDescription,
+                ServiceGroup = serverGroup,
+                IsEnable = true
+            });
+
+        CurrentServerListFilterOptions = newOption;
+        logger.LogInformationEx("current server list filter option is reset.");
+        return Task.CompletedTask;
     }
 
     private void UpdateSubscribeServers()
@@ -399,7 +465,11 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
         var mapChangedServers = servers.Where(x =>
             oldMaps.TryGetValue(x.Info.EndPointDescription, out var oldMapName) && oldMapName != x.Map).ToList();
 
-        await Dispatcher.UIThread.InvokeAsync(UpdateSubscribeServers);
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            UpdateSubscribeServers();
+            RefreshFilterServers();
+        });
         ProcessMapChangedServers(mapChangedServers);
     }
 

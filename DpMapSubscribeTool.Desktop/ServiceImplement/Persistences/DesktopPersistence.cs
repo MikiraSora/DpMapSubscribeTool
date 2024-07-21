@@ -16,6 +16,7 @@ namespace DpMapSubscribeTool.Desktop.ServiceImplement.Persistences;
 [RegisterInjectable(typeof(IPersistence), ServiceLifetime.Singleton)]
 public class DesktopPersistence : IPersistence
 {
+    private readonly Dictionary<string, object> cacheObj = new();
     private readonly IDialogManager dialogManager;
     private readonly object locker = new();
     private readonly ILogger<DesktopPersistence> logger;
@@ -46,7 +47,7 @@ public class DesktopPersistence : IPersistence
         if (DesignModeHelper.IsDesignMode)
             return;
 #endif
-        
+
         await Task.Run(() =>
         {
             lock (locker)
@@ -61,22 +62,32 @@ public class DesktopPersistence : IPersistence
         });
     }
 
-    public async Task<T> Load<T>()
+    public Task<T> Load<T>()
+    {
+        return Task.Run(() =>
+        {
+            lock (locker)
+            {
+                return LoadInternal<T>();
+            }
+        });
+    }
+
+    private T LoadInternal<T>()
     {
         var key = GetKey<T>();
+
+        if (cacheObj.TryGetValue(key, out var obj))
+        {
+            logger.LogDebugEx($"return cached {typeof(T).Name} object, hash = {obj.GetHashCode()}");
+            return (T) obj;
+        }
 
         if (settingMap is null)
         {
             if (File.Exists(savePath))
             {
-                var content = "";
-                await Task.Run(() =>
-                {
-                    lock (locker)
-                    {
-                        content = File.ReadAllText(savePath);
-                    }
-                });
+                var content = File.ReadAllText(savePath);
                 if (string.IsNullOrWhiteSpace(content))
                     settingMap = new Dictionary<string, string>();
                 else
@@ -87,9 +98,12 @@ public class DesktopPersistence : IPersistence
                     catch (Exception e)
                     {
                         logger.LogErrorEx(e, $"Can't load setting.json : {e.Message}");
-                        await dialogManager.ShowMessageDialog($"无法加载应用配置文件setting.json:{e.Message}",
-                            DialogMessageType.Error);
-                        Environment.Exit(-1);
+                        Task.Run(async () =>
+                        {
+                            await dialogManager.ShowMessageDialog($"无法加载应用配置文件setting.json:{e.Message}",
+                                DialogMessageType.Error);
+                            Environment.Exit(-1);
+                        }).Wait();
                     }
             }
             else
@@ -98,10 +112,21 @@ public class DesktopPersistence : IPersistence
             }
         }
 
+        T cw = default;
         if (settingMap.TryGetValue(key, out var jsonContent))
-            return JsonSerializer.Deserialize<T>(jsonContent);
+        {
+            cw = JsonSerializer.Deserialize<T>(jsonContent);
+            logger.LogDebugEx($"create new {typeof(T).Name} object from setting.json, hash = {cw.GetHashCode()}");
+        }
+        else
+        {
+            cw = ActivatorUtilities.CreateInstance<T>(provider);
+            logger.LogDebugEx(
+                $"create new {typeof(T).Name} object from ActivatorUtilities.CreateInstance(), hash = {cw.GetHashCode()}");
+        }
 
-        return ActivatorUtilities.CreateInstance<T>(provider);
+        cacheObj[key] = cw;
+        return cw;
     }
 
     private string GetKey<T>()

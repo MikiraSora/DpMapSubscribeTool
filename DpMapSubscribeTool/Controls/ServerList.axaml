@@ -1,0 +1,79 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:controls="clr-namespace:DpMapSubscribeTool.Controls"
+             xmlns:models="clr-namespace:DpMapSubscribeTool.Models"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="DpMapSubscribeTool.Controls.ServerList">
+    <Design.DataContext>
+        <controls:ServerList />
+    </Design.DataContext>
+    <DataGrid
+        Name="hostDataGrid"
+        IsReadOnly="True"
+        SelectionMode="Single"
+        VerticalScrollBarVisibility="Disabled"
+        AutoGenerateColumns="False"
+        ItemsSource="{Binding Servers}">
+        <DataGrid.Columns>
+            <DataGridTextColumn IsReadOnly="True" Header="社区"
+                                Binding="{Binding Info.ServerGroupDisplay}" />
+            <DataGridTextColumn IsReadOnly="True" Header="服务器名" Binding="{Binding Info.Name}" />
+            <DataGridTemplateColumn IsReadOnly="True" Header="地图">
+                <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                        <TextBlock VerticalAlignment="Center" Text="{Binding Map}"
+                                   Foreground="{Binding Map,Mode=OneWay,Converter={StaticResource BrushMapTypeConverter}}" />
+                    </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+            <DataGridTextColumn IsReadOnly="True" Header="地图译名"
+                                Binding="{Binding Map,Mode=OneWay,Converter={StaticResource GetMapTranslationNameConverter}}" />
+            <DataGridTextColumn IsReadOnly="True" Header="关卡状态" Binding="{Binding State}" />
+            <DataGridTemplateColumn IsReadOnly="True" Header="人数">
+                <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                        <Label VerticalAlignment="Center">
+                            <Label.Content>
+                                <MultiBinding
+                                    Converter="{StaticResource DisplayPlayerCountConverter }">
+                                    <Binding Path="CurrentPlayerCount" />
+                                    <Binding Path="MaxPlayerCount" />
+                                </MultiBinding>
+                            </Label.Content>
+                            <Label.Foreground>
+                                <MultiBinding
+                                    Converter="{StaticResource BrushPlayerCountConverter }">
+                                    <Binding Path="CurrentPlayerCount" />
+                                    <Binding Path="MaxPlayerCount" />
+                                </MultiBinding>
+                            </Label.Foreground>
+                        </Label>
+                    </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+            <DataGridTextColumn IsReadOnly="True" Header="延迟" Binding="{Binding Delay}" />
+            <DataGridTextColumn IsReadOnly="True" Header="服务器地址" Binding="{Binding Info.EndPointDescription}" />
+        </DataGrid.Columns>
+        <DataGrid.Styles>
+            <Style Selector="DataGridCell Rectangle">
+                <Setter Property="IsVisible" Value="False" />
+            </Style>
+            <Style Selector="DataGridRow">
+                <Setter Property="ContextMenu">
+                    <ContextMenu>
+                        <MenuItem x:DataType="models:Server"
+                                  Command="{Binding #hostDataGrid.((controls:ServerList)DataContext).JoinServerCommand}"
+                                  CommandParameter="{Binding .}"
+                                  Header="加入服务器" />
+                        <MenuItem x:DataType="models:Server"
+                                  Command="{Binding #hostDataGrid.((controls:ServerList)DataContext).SqueezeJoinServerCommand}"
+                                  CommandParameter="{Binding .}"
+                                  Header="自动挤服" />
+                    </ContextMenu>
+                </Setter>
+            </Style>
+        </DataGrid.Styles>
+    </DataGrid>
+</UserControl>

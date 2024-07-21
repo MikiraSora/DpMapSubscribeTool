@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DpMapSubscribeTool.Models;
 using DpMapSubscribeTool.Services.Dialog;
+using DpMapSubscribeTool.Services.Notifications;
 using DpMapSubscribeTool.Services.Persistences;
 using DpMapSubscribeTool.Services.Servers.DefaultImpl.ServiceGroupImpl.FYS;
 using DpMapSubscribeTool.Services.Servers.DefaultImpl.ServiceGroupImpl.Test;
@@ -14,6 +15,7 @@ namespace DpMapSubscribeTool.ViewModels.Pages.Setting;
 
 public partial class SettingPageViewModel : PageViewModelBase
 {
+    private readonly IApplicationNotification applicationNotification;
     private readonly IDialogManager dialogManager;
 
     private readonly IFysServerServiceBase fysServerService;
@@ -39,12 +41,14 @@ public partial class SettingPageViewModel : PageViewModelBase
 
     public SettingPageViewModel(ILogger<SettingPageViewModel> logger,
         IPersistence persistence, IDialogManager dialogManager, ITestServerManager testServerManager,
+        IApplicationNotification applicationNotification,
         IFysServerServiceBase fysServerService)
     {
         this.logger = logger;
         this.persistence = persistence;
         this.dialogManager = dialogManager;
         this.testServerManager = testServerManager;
+        this.applicationNotification = applicationNotification;
         this.fysServerService = fysServerService;
 
         Initialize();
@@ -101,11 +105,24 @@ public partial class SettingPageViewModel : PageViewModelBase
     }
 
     [RelayCommand]
+    private void PlayNotificationSound()
+    {
+        applicationNotification.PlaySound();
+    }
+
+    [RelayCommand]
     private async Task SaveSetting()
     {
         await SaveSettingInternal(ApplicationSettings);
         await SaveSettingInternal(FysServerSettings);
         await dialogManager.ShowMessageDialog("选项已保存！");
+    }
+
+    [RelayCommand]
+    private void DeleteMapSubscribe(MapSubscribe mapSubscribe)
+    {
+        ApplicationSettings.UserMapSubscribes.Remove(mapSubscribe);
+        logger.LogInformationEx($"delete map subscribe:{mapSubscribe.Name}");
     }
 
     [RelayCommand]

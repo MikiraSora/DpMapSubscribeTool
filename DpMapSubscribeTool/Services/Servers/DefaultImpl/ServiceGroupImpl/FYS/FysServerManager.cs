@@ -102,6 +102,9 @@ public class FysServerManager : IFysServerServiceBase, IServerInfoSearcher, ISer
         return checkResult;
     }
 
+    public string ServerGroup => "FYS";
+    public string ServerGroupDescription => "风云社";
+
     public async Task Join(ServerInfo serverInfo)
     {
         var ipList = await Dns.GetHostAddressesAsync(serverInfo.Host);
@@ -130,8 +133,8 @@ public class FysServerManager : IFysServerServiceBase, IServerInfoSearcher, ISer
         return currentCachedEventStreamData.Servers
             .Select(server => new ServerInfo
             {
-                ServerGroup = "FYS", Port = server.Port, Host = server.Host, Name = server.Name,
-                ServerGroupDisplay = "风云社"
+                ServerGroup = ServerGroup, Port = server.Port, Host = server.Host, Name = server.Name,
+                ServerGroupDisplay = ServerGroupDescription
             })
             .ToList();
     }
