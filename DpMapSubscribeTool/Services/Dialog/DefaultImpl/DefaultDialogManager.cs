@@ -46,10 +46,10 @@ public class DefaultDialogManager : IDialogManager
 
     private async Task<T> ShowDialog<T>(T viewModel) where T : DialogViewModelBase
     {
-        logger.LogInformation($"dialog {viewModel.DialogIdentifier} started.");
+        logger.LogInformationEx($"dialog {viewModel.DialogIdentifier} started.");
         var view = new TemplateDialogView(viewModel);
         await view.ShowAsync();
-        logger.LogInformation($"dialog {viewModel.DialogIdentifier} finished");
+        logger.LogInformationEx($"dialog {viewModel.DialogIdentifier} finished");
         return viewModel;
     }
 }

@@ -4,6 +4,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using DesktopNotifications;
 using DpMapSubscribeTool.Desktop.Utils.Logging;
 using DpMapSubscribeTool.Desktop.Utils.MethodExtensions;
+using DpMapSubscribeTool.Utils;
 using DpMapSubscribeTool.Utils.Injections;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -39,6 +40,10 @@ internal class Program
             .AppendDependencyInject(collection =>
                 {
                     collection.AddInjectsByAttributes(typeof(Program).Assembly);
+#if DEBUG
+                    if (DesignModeHelper.IsDesignMode)
+                        return;
+#endif
                     collection.AddLogging(o =>
                     {
                         o.SetMinimumLevel(LogLevel.Debug);

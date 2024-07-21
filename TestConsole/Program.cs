@@ -36,7 +36,7 @@ var serviceCollection = CreateDefaultServiceCollection();
 var serviceProvider = serviceCollection.BuildServiceProvider();
 
 var logger = serviceProvider.GetService<ILogger<Program>>();
-logger.LogInformation("HELLO TEST CONSOLE.");
+logger.LogInformationEx("HELLO TEST CONSOLE.");
 
 var serverManager = serviceProvider.GetService<IServerManager>();
 await serverManager.RefreshServers();

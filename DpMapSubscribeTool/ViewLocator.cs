@@ -1,16 +1,28 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using DpMapSubscribeTool.ViewModels;
+using DpMapSubscribeTool.Views.Attributes;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace DpMapSubscribeTool;
 
 internal class ViewLocator : IDataTemplate
 {
+    private readonly Dictionary<Type, Control> cachedViewMap = new();
+    private readonly ILogger<ViewLocator> logger;
+
+    public ViewLocator(ILogger<ViewLocator> logger)
+    {
+        this.logger = logger;
+    }
+
     public bool ForceSinglePageNavigation { get; set; } = true;
     public bool UseSinglePageNavigation { get; } = true;
 
@@ -22,28 +34,46 @@ internal class ViewLocator : IDataTemplate
         var viewTypeName = GetViewTypeName(viewModel.GetType());
         var viewType = GetViewType(viewTypeName);
 
-        if (viewType == null)
+        var isCachable = viewType.GetCustomAttribute<CachableViewAttribute>() is not null;
+
+        var control = default(Control);
+        if (isCachable && cachedViewMap.TryGetValue(viewType, out var view))
         {
-            var msg = $"<viwe type not found:{viewTypeName}; model type:{viewModel.GetType().FullName}>";
+            //from cache
+            logger.LogDebugEx($"provide cached view {viewType.Name}");
+            control = view;
+        }
+        else
+        {
+            if (viewType == null)
+            {
+                var msg = $"<viwe type not found:{viewTypeName}; model type:{viewModel.GetType().FullName}>";
 #if DEBUG
-            throw new Exception(msg);
+                throw new Exception(msg);
 #else
 				return new TextBlock { Text = msg };
 #endif
+            }
+
+            //create new
+            control = (Control) ActivatorUtilities.CreateInstance((Application.Current as App).RootServiceProvider,
+                viewType);
+
+            control.Loaded += (a, aa) => { viewModel.OnViewAfterLoaded(control); };
+            control.Unloaded += (a, aa) =>
+            {
+                viewModel.OnViewBeforeUnload(control);
+                control.DataContext = null;
+
+                if (isCachable)
+                {
+                    cachedViewMap[viewType] = control;
+                    logger.LogDebugEx($"recycle view {viewType.Name} object for ViewLocator");
+                }
+            };
         }
 
-        var control =
-            (Control) ActivatorUtilities.CreateInstance((Application.Current as App).RootServiceProvider, viewType);
-        control.Loaded += (a, aa) =>
-        {
-            control.DataContext = viewModel;
-            viewModel.OnViewAfterLoaded(control);
-        };
-        control.Unloaded += (a, aa) =>
-        {
-            viewModel.OnViewBeforeUnload(control);
-            control.DataContext = null;
-        };
+        control.DataContext = viewModel;
         return control;
     }
 

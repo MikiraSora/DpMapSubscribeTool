@@ -12,6 +12,7 @@ using DpMapSubscribeTool.Models;
 using DpMapSubscribeTool.Services.Dialog;
 using DpMapSubscribeTool.Services.Notifications;
 using DpMapSubscribeTool.Services.Persistences;
+using DpMapSubscribeTool.Utils;
 using DpMapSubscribeTool.Utils.Injections;
 using DpMapSubscribeTool.Utils.MethodExtensions;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,6 +39,9 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
 
     private TimeSpan autoPingTimeInterval;
     private TimeSpan autoRefreshTimeInterval;
+
+    [ObservableProperty]
+    private SqueezeJoinTaskStatus currentSqueezeJoinTaskStatus;
 
     [ObservableProperty]
     private bool isDataReady;
@@ -83,7 +87,7 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
     {
         if (PickServiceService(serverUpdaters, server) is not IServerStateUpdater updater)
         {
-            logger.LogError("No updater to process :{server}");
+            logger.LogErrorEx("No updater to process :{server}");
             return;
         }
 
@@ -105,7 +109,7 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
     {
         if (PickServiceService(serverExecutors, serverInfo) is not IServerActionExecutor executor)
         {
-            logger.LogError("No executor to process :{serverInfo}");
+            logger.LogErrorEx("No executor to process :{serverInfo}");
             return;
         }
 
@@ -154,7 +158,7 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
             UpdateSubscribeServers();
         });
 
-        logger.LogInformation($"RefreshServers() {Servers.Count} servers updated.");
+        logger.LogInformationEx($"RefreshServers() {Servers.Count} servers updated.");
 
         ProcessMapChangedServers(mapChangedList);
     }
@@ -164,9 +168,10 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
         //stop current running
         if (squeezeCancellationTokenSource != null)
         {
-            logger.LogInformation("cancel current squeeze-join task.");
-            squeezeCancellationTokenSource.Cancel();
-            squeezeCancellationTokenSource = default;
+            if (!await dialogManager.ShowComfirmDialog("已存在挤服任务，是否取消当前挤服任务并重新执行新的？", "是", "否"))
+                return;
+
+            await StopSqueezeJoinServerTask();
         }
 
         //run new
@@ -174,29 +179,47 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
         await Task.Run(() => OnSqueezeJoinServerTask(serverInfo, option, squeezeCancellationTokenSource.Token));
     }
 
+    public Task StopSqueezeJoinServerTask()
+    {
+        if (squeezeCancellationTokenSource != null)
+        {
+            logger.LogInformationEx("cancel current squeeze-join task.");
+            squeezeCancellationTokenSource.Cancel();
+            ClearSqueezeJoinServer();
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private void ClearSqueezeJoinServer()
+    {
+        squeezeCancellationTokenSource = default;
+        CurrentSqueezeJoinTaskStatus = default;
+    }
+
     private async Task OnSqueezeJoinServerTask(ServerInfo serverInfo, SqueezeJoinServerOption option,
         CancellationToken cancellationToken)
     {
-        logger.LogInformation("OnSqueezeJoinServerTask() started.");
-        logger.LogInformation($"option.SqueezeTargetPlayerCountDiff={option.SqueezeTargetPlayerCountDiff}");
-        logger.LogInformation($"option.MakeGameForegroundIfSuccess={option.MakeGameForegroundIfSuccess}");
-        logger.LogInformation($"option.TryJoinInterval={option.TryJoinInterval}");
-        logger.LogInformation($"option.NotifyIfSuccess={option.NotifyIfSuccess}");
-        logger.LogInformation($"serverInfo.Name={serverInfo.Name}");
-        logger.LogInformation($"serverInfo.EndPointDescription={serverInfo.EndPointDescription}");
-        logger.LogInformation($"serverInfo.ServerGroup={serverInfo.ServerGroup}");
+        logger.LogInformationEx("started.");
+        logger.LogInformationEx($"option.SqueezeTargetPlayerCountDiff={option.SqueezeTargetPlayerCountDiff}");
+        logger.LogInformationEx($"option.MakeGameForegroundIfSuccess={option.MakeGameForegroundIfSuccess}");
+        logger.LogInformationEx($"option.TryJoinInterval={option.TryJoinInterval}");
+        logger.LogInformationEx($"option.NotifyIfSuccess={option.NotifyIfSuccess}");
+        logger.LogInformationEx($"serverInfo.Name={serverInfo.Name}");
+        logger.LogInformationEx($"serverInfo.EndPointDescription={serverInfo.EndPointDescription}");
+        logger.LogInformationEx($"serverInfo.ServerGroup={serverInfo.ServerGroup}");
 
         var runner = PickServiceService(squeezeJoinRunners, serverInfo);
         if (runner == null)
         {
-            logger.LogError("No squeeze-join runner.");
+            logger.LogErrorEx("No squeeze-join runner.");
             await dialogManager.ShowMessageDialog("无法执行挤服功能，应用并未支持此社区服务器", DialogMessageType.Error);
             goto End;
         }
 
         if (!await runner.CheckSqueezeJoinServer(serverInfo, option, cancellationToken))
         {
-            logger.LogError("CheckSqueezeJoinServer() return false.");
+            logger.LogErrorEx("CheckSqueezeJoinServer() return false.");
             goto End;
         }
 
@@ -205,28 +228,47 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
         var ipList = await Dns.GetHostAddressesAsync(serverInfo.Host, cancellationToken);
         if (ipList.Length == 0)
         {
-            logger.LogError($"Can't lookup ip address for host name:{serverInfo.Host}");
+            logger.LogErrorEx($"Can't lookup ip address for host name:{serverInfo.Host}");
             await dialogManager.ShowMessageDialog($"无法执行挤服功能，无法获取服务器ip地址({serverInfo.Host})", DialogMessageType.Error);
             goto End;
         }
 
         var ipAddr = ipList.First();
+
+        //build status and set
+        var server = Servers.FirstOrDefault(x => x.Info.EndPointDescription == serverInfo.EndPointDescription);
+        if (server == null)
+        {
+            logger.LogErrorEx($"Can't lookup related Server object for endpoint:{serverInfo.EndPointDescription}");
+            await dialogManager.ShowMessageDialog("无法执行挤服功能，程序内部问题(程序找不到serverInfo对应的Server对象).",
+                DialogMessageType.Error);
+            goto End;
+        }
+
+        var status = new SqueezeJoinTaskStatus(server, option);
+        CurrentSqueezeJoinTaskStatus = status;
+
         var gameServer = new GameServer($"{ipAddr}:{serverInfo.Port}");
-
         var diff = option.SqueezeTargetPlayerCountDiff;
-
         while (!cancellationToken.IsCancellationRequested)
         {
             //get current player count
             var info = await gameServer.GetInformationAsync(cancellationToken);
             var currentPlayerCount = info.OnlinePlayers;
 
-            logger.LogInformation(
+            CurrentSqueezeJoinTaskStatus.Server.CurrentPlayerCount = currentPlayerCount;
+
+            logger.LogInformationEx(
                 $"currentPlayerCount({currentPlayerCount}) <= ({info.MaxPlayers - diff}) maxPlayerCount({info.MaxPlayers}) - diff({diff}).");
             if (currentPlayerCount <= info.MaxPlayers - diff)
             {
                 //join
                 await JoinServer(serverInfo);
+
+                //currently there is no way to check if user squeeze-join server successfully.
+                //because of map download request and loading.
+                //so we just notify user we had executed join-server cmd at all. ^ ^
+                /*
                 //wait
                 await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
                 if (cancellationToken.IsCancellationRequested)
@@ -235,24 +277,25 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
                 var players = (await gameServer.GetPlayersAsync(cancellationToken)).Select(x => x.Name).ToList();
                 if (await runner.IsUserInServer(players, cancellationToken))
                 {
-                    logger.LogInformation("squeeze-join server successfully.");
+                    logger.LogInformationEx("squeeze-join server successfully.");
                     break;
                 }
 
-                logger.LogInformation("squeeze-join server failed, try again.");
+                logger.LogInformationEx("squeeze-join server failed, try again.");
+                */
+
+                applicationNotification.NofitySqueezeJoinSuccess(serverInfo).NoWait();
+                break;
             }
 
-            await Task.Delay(timeInterval, cancellationToken);
+            await Task.Delay(timeInterval, default);
         }
 
-        End:
-        squeezeCancellationTokenSource = default;
-        logger.LogInformation("OnSqueezeJoinServerTask() finished.");
-    }
+        gameServer?.Dispose();
 
-    private async Task<bool> IsUserInServer(GameServer gameServer, CancellationToken cancellationToken)
-    {
-        return false;
+        End:
+        ClearSqueezeJoinServer();
+        logger.LogInformationEx("OnSqueezeJoinServerTask() finished.");
     }
 
     private void ProcessMapChangedServers(List<Server> mapChangedList)
@@ -264,11 +307,15 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
             .ToArray();
 
         if (mapChangedList.Count > 0)
-            logger.LogInformation(
+            logger.LogInformationEx(
                 $"ProcessMapChangedServers() there are {filterServers.Length} servers match subscribe rules in same time: {string.Join(",", filterServers.Select(x => x.x.Map))}");
 
         foreach (var (server, rule) in filterServers)
-            applicationNotification.NofityServerForSubscribeMap(server, rule, () => JoinServer(server.Info).NoWait());
+            applicationNotification.NofityServerForSubscribeMap(server, rule, reaction =>
+            {
+                if (reaction == UserReaction.Comfirm)
+                    JoinServer(server.Info).NoWait();
+            });
     }
 
     private async Task<Server[]> FetchAllServers()
@@ -287,6 +334,10 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
 
     private async void Initialize()
     {
+#if DEBUG
+        if (DesignModeHelper.IsDesignMode)
+            return; //NOT SUPPORT IN DESIGN MODE
+#endif
         applicationSetting = await persistence.Load<ApplicationSettings>();
         autoPingTimeInterval = TimeSpan.FromSeconds(applicationSetting.AutoPingTimeInterval);
         autoRefreshTimeInterval = TimeSpan.FromSeconds(applicationSetting.AutoRefreshTimeInterval);
@@ -296,11 +347,11 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
         Task.Run(OnAutoUpdateCurrentExistServersTask).NoWait();
     }
 
-    private async void UpdateSubscribeServers()
+    private void UpdateSubscribeServers()
     {
         if (applicationSetting is null)
         {
-            logger.LogWarning("applicationSetting is null");
+            logger.LogWarningEx("applicationSetting is null");
             return;
         }
 
@@ -311,19 +362,19 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
         foreach (var server in filterServers)
             SubscribeServers.Add(server);
 
-        logger.LogInformation("SubscribedServers updated");
+        logger.LogInformationEx("SubscribedServers updated");
     }
 
     private async void OnAutoUpdateCurrentExistServersTask()
     {
-        logger.LogInformation("OnUpdateServerStateTask() begin");
+        logger.LogInformationEx("OnUpdateServerStateTask() begin");
 
         while (true)
         {
             await UpdateCurrentExistServers();
             //await RefreshServers();
 
-            logger.LogDebug("updated all servers.");
+            logger.LogDebugEx("updated all servers.");
             await Task.Delay(autoPingTimeInterval);
         }
     }
@@ -339,7 +390,7 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
             var before = x.CurrentPlayerCount;
             await updater?.UpdateServer(x);
             if (before != x.CurrentPlayerCount)
-                logger.LogInformation(
+                logger.LogInformationEx(
                     $"server {x.Info.Name} playercount {before} -> {x.CurrentPlayerCount}");
         }).ToArray();
 
@@ -354,12 +405,12 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
 
     private async void OnAutoPingAllServersTask()
     {
-        logger.LogInformation("OnAutoPingTask() begin");
+        logger.LogInformationEx("OnAutoPingTask() begin");
 
         while (true)
         {
             await PingAllServers();
-            logger.LogDebug("ping all servers.");
+            logger.LogDebugEx("ping all servers.");
             await Task.Delay(autoPingTimeInterval);
         }
     }

@@ -1,21 +1,18 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using Microsoft.Extensions.Logging;
+﻿using System;
 using System.Collections.ObjectModel;
-using System.Net;
-using System.Text.Json;
-using System.Threading.Tasks;
-using System;
-using DpMapSubscribeTool.Utils;
-using DpMapSubscribeTool.Controls;
-using DpMapSubscribeTool.ViewModels.Pages;
 using System.Linq;
+using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using DpMapSubscribeTool.Controls;
 using DpMapSubscribeTool.Services.Persistences;
-using DpMapSubscribeTool.Services.Notifications;
 using DpMapSubscribeTool.Services.Servers;
+using DpMapSubscribeTool.Utils;
+using DpMapSubscribeTool.ViewModels.Pages;
 using DpMapSubscribeTool.ViewModels.Pages.Home;
 using DpMapSubscribeTool.ViewModels.Pages.ServerList;
 using DpMapSubscribeTool.ViewModels.Pages.Setting;
+using Microsoft.Extensions.Logging;
 
 namespace DpMapSubscribeTool.ViewModels;
 
@@ -23,7 +20,7 @@ public partial class MainViewModel : ViewModelBase
 {
     private readonly ILogger<MainViewModel> logger;
     private readonly IPersistence persistence;
-    private readonly IServerManager serverManager;
+
     private readonly ViewModelFactory viewModelFactory;
 
     [ObservableProperty]
@@ -37,6 +34,9 @@ public partial class MainViewModel : ViewModelBase
 
     [ObservableProperty]
     private ListItemTemplate selectedListItem;
+
+    [ObservableProperty]
+    private IServerManager serverManager;
 
     public MainViewModel(
         ILogger<MainViewModel> logger,
@@ -55,8 +55,8 @@ public partial class MainViewModel : ViewModelBase
     public ObservableCollection<ListItemTemplate> TopItems { get; } = new()
     {
         new ListItemTemplate(typeof(HomePageViewModel), "主页", "Home"),
-        new ListItemTemplate(typeof(ServerListPageViewModel), "服务器列表", "ServerList"),
-        new ListItemTemplate(typeof(SettingPageViewModel), "设置", "Setting"),
+        new ListItemTemplate(typeof(ServerListPageViewModel), "服务器列表", "DataBarHorizontal"),
+        new ListItemTemplate(typeof(SettingPageViewModel), "设置", "Settings")
     };
 
     public ObservableCollection<ListItemTemplate> BottomItems { get; } = new();
@@ -92,7 +92,7 @@ public partial class MainViewModel : ViewModelBase
         //load default page.
         await NavigatePageAsync<HomePageViewModel>();
         //prepare server list
-        await serverManager.PrepareData();
+        await ServerManager.PrepareData();
     }
 
     partial void OnSelectedListItemChanged(ListItemTemplate oldValue, ListItemTemplate newValue)
@@ -105,5 +105,11 @@ public partial class MainViewModel : ViewModelBase
     private void TriggerPane()
     {
         IsPaneOpen = !IsPaneOpen;
+    }
+
+    [RelayCommand]
+    private void StopSqueezeJoinServerTask()
+    {
+        ServerManager.StopSqueezeJoinServerTask();
     }
 }

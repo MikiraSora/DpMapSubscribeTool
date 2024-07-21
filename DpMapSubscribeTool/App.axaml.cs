@@ -23,28 +23,37 @@ public class App : Application
     public override void OnFrameworkInitializationCompleted()
     {
         InitServiceProvider();
+        //add ViewLocator
+        DataTemplates.Add(ActivatorUtilities.CreateInstance<ViewLocator>(RootServiceProvider));
+
         var logger = RootServiceProvider.GetService<ILogger<App>>();
 
         var injectableConverters = RootServiceProvider.GetServices<IInjectableValueConverter>();
         foreach (var converter in injectableConverters)
         {
             var key = converter.GetType().Name;
-            logger.LogInformation($"add injectable converter: {key}");
+            logger.LogInformationEx($"add injectable converter: {key}");
             Resources[key] = converter;
         }
 
         var mainViewModel = ActivatorUtilities.CreateInstance<MainViewModel>(RootServiceProvider);
 
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            desktop.MainWindow = new MainWindow
-            {
-                DataContext = mainViewModel
-            };
-        else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
-            singleViewPlatform.MainView = new MainView
-            {
-                DataContext = mainViewModel
-            };
+        switch (ApplicationLifetime)
+        {
+            case IClassicDesktopStyleApplicationLifetime desktop:
+                desktop.MainWindow = new MainWindow
+                {
+                    DataContext = mainViewModel
+                };
+                break;
+            case ISingleViewApplicationLifetime singleViewPlatform:
+                singleViewPlatform.MainView = new MainView
+                {
+                    DataContext = mainViewModel
+                };
+                break;
+        }
+
         base.OnFrameworkInitializationCompleted();
     }
 

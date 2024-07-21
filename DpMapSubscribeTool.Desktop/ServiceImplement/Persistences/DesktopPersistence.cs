@@ -86,7 +86,7 @@ public class DesktopPersistence : IPersistence
                     }
                     catch (Exception e)
                     {
-                        logger.LogError(e, $"Can't load setting.json : {e.Message}");
+                        logger.LogErrorEx(e, $"Can't load setting.json : {e.Message}");
                         await dialogManager.ShowMessageDialog($"无法加载应用配置文件setting.json:{e.Message}",
                             DialogMessageType.Error);
                         Environment.Exit(-1);

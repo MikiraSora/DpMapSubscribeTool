@@ -161,9 +161,9 @@
                         <Border Height="2" Classes="ContentContainer" Margin="0,5" />
                         <StackPanel Margin="5,0">
                             <StackPanel Margin="0,5" Orientation="Horizontal">
-                                <Label VerticalAlignment="Center" Content="用户UID：" />
-                                <TextBox Width="100" Text="{Binding FysServerSettings.PlayerName}" />
-                                <Button Margin="10,0" Content="测试获取用户游戏名称" />
+                                <Label VerticalAlignment="Center" Content="用户游戏名：" />
+                                <TextBox Width="200" Text="{Binding FysServerSettings.PlayerName}" />
+                                <Button Margin="10,0" Command="{Binding TestFysPlayerNameCommand}" Content="测试获取用户游戏名称" />
                                 <Label VerticalAlignment="Center" Content="{Binding FysTestUserNameResult}" />
                             </StackPanel>
                             <StackPanel Margin="0,5" Orientation="Horizontal">

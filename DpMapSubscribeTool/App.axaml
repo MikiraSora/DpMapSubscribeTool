@@ -4,18 +4,21 @@
              xmlns:local="using:DpMapSubscribeTool"
              xmlns:valueConverters="clr-namespace:DpMapSubscribeTool.ValueConverters"
              xmlns:dialogHostAvalonia="clr-namespace:DialogHostAvalonia;assembly=DialogHost.Avalonia"
+             xmlns:styling="clr-namespace:FluentAvalonia.Styling;assembly=FluentAvalonia"
              RequestedThemeVariant="Default">
     <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
 
     <Application.Resources>
         <valueConverters:DisplayPlayerCountConverter x:Key="DisplayPlayerCountConverter" />
         <valueConverters:BrushPlayerCountConverter x:Key="BrushPlayerCountConverter" />
+        <valueConverters:BrushMapTypeConverter x:Key="BrushMapTypeConverter"/>
     </Application.Resources>
 
     <Application.Styles>
         <FluentTheme />
         <StyleInclude Source="avares://DataBox/Themes/DataBoxFluentTheme.axaml" />
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+        <StyleInclude Source="avares://FluentAvalonia.ProgressRing/Styling/Controls/ProgressRing.axaml" />
         <Style Selector="Border.ContentContainer">
             <Setter Property="CornerRadius" Value="5" />
             <Setter Property="Padding" Value="5" />
@@ -31,8 +34,4 @@
         </Style>
         <dialogHostAvalonia:DialogHostStyles />
     </Application.Styles>
-
-    <Application.DataTemplates>
-        <local:ViewLocator />
-    </Application.DataTemplates>
 </Application>

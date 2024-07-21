@@ -15,6 +15,7 @@ using DpMapSubscribeTool.Services.Map;
 using DpMapSubscribeTool.Services.Networks;
 using DpMapSubscribeTool.Services.Persistences;
 using DpMapSubscribeTool.Services.Servers.DefaultImpl.ServiceGroupImpl.FYS.Bases;
+using DpMapSubscribeTool.Utils;
 using DpMapSubscribeTool.Utils.Injections;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -62,21 +63,27 @@ public class FysServerManager : IFysServerServiceBase, IServerInfoSearcher, ISer
 
     public async Task<bool> CheckUserInvaild(string name)
     {
-        var isWanjia = name.StartsWith("玩家Z");
-        logger.LogInformation($"user name {name} is 玩家哥");
-        var regex = new Regex(isWanjia + @"\s*#\(\w+\)");
+        var isWanjiaBro = name.StartsWith("玩家Z");
+        logger.LogInformationEx($"user name {name} is 玩家哥");
+        var regexPattern = name + @"\s*#\(\w+\)";
+        var regex = new Regex(regexPattern);
+        var cancelToken = DelayCancellationTokenSource.Create(TimeSpan.FromSeconds(2));
 
         async Task<bool> check(ServerInfo serverInfo)
         {
             try
             {
-                var gameServer = new GameServer(serverInfo.Host, serverInfo.Port);
-                var players = await gameServer.GetPlayersAsync();
-                foreach (var playerName in players.Select(x => x.Name))
+                using var gameServer = new GameServer(serverInfo.Host, serverInfo.Port);
+                logger.LogDebugEx($"begin check server {serverInfo.EndPointDescription}");
+                var players = await gameServer.GetPlayersAsync(cancelToken);
+                var playerNames = players.Select(x => x.Name).ToArray();
+                logger.LogDebugEx(
+                    $"server {serverInfo.EndPointDescription} return players:{string.Join(", ", playerNames)}");
+                foreach (var playerName in playerNames)
                 {
                     if (playerName == name)
                         return true;
-                    if (isWanjia && regex.IsMatch(playerName))
+                    if (isWanjiaBro && regex.IsMatch(playerName))
                         return true;
                 }
             }
@@ -89,9 +96,10 @@ public class FysServerManager : IFysServerServiceBase, IServerInfoSearcher, ISer
         }
 
         var serverInfos = await GetAllAvaliableServerInfo();
-        var queryResultTasks = serverInfos.Select(info => check(info)).ToArray();
-        var queryResults = await Task.WhenAll(queryResultTasks);
-        return queryResults.Any(x => x);
+        var queryResults = await Task.WhenAll(serverInfos.Select(info => check(info)).ToArray());
+        var checkResult = queryResults.Any(x => x);
+        logger.LogInformationEx($"playerName check result: {checkResult}");
+        return checkResult;
     }
 
     public async Task Join(ServerInfo serverInfo)
@@ -99,7 +107,7 @@ public class FysServerManager : IFysServerServiceBase, IServerInfoSearcher, ISer
         var ipList = await Dns.GetHostAddressesAsync(serverInfo.Host);
         if (ipList.Length == 0)
         {
-            logger.LogWarning($"Can't lookup ip address for host name:{serverInfo.Host}");
+            logger.LogWarningEx($"Can't lookup ip address for host name:{serverInfo.Host}");
             await dialogManager.ShowMessageDialog($"无法进入服务器，无法获取服务器ip地址({serverInfo.Host})", DialogMessageType.Error);
             return;
         }
@@ -107,7 +115,7 @@ public class FysServerManager : IFysServerServiceBase, IServerInfoSearcher, ISer
         var ipAddr = ipList.First();
         //var steamCmd = $"steam://connect/{ipAddr}:{serverInfo.Port}";
         var steamCmd = $"steam://rungame/730/76561202255233023/+connect%20{ipAddr}:{serverInfo.Port}";
-        logger.LogInformation($"execute steamCmd: {steamCmd}");
+        logger.LogInformationEx($"execute steamCmd: {steamCmd}");
         Process.Start(new ProcessStartInfo("cmd.exe")
         {
             UseShellExecute = true,
@@ -131,12 +139,35 @@ public class FysServerManager : IFysServerServiceBase, IServerInfoSearcher, ISer
     public async Task<bool> CheckSqueezeJoinServer(ServerInfo serverInfo, SqueezeJoinServerOption option,
         CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        if (string.IsNullOrWhiteSpace(fysServerSettings.PlayerName))
+        {
+            logger.LogWarningEx("no fys playerName");
+            await dialogManager.ShowMessageDialog("Fys服务器挤服功能需要去本程序设置页面填写Fys服务器内自己的玩家名。");
+            return false;
+        }
+
+        return true;
     }
 
-    public async Task<bool> IsUserInServer(List<string> playerNameList, CancellationToken cancellationToken)
+    public Task<bool> IsUserInServer(List<string> playerNameList, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var name = fysServerSettings.PlayerName;
+        if (string.IsNullOrWhiteSpace(name))
+            return Task.FromResult(false);
+
+        var isWanjiaBro = name.StartsWith("玩家Z");
+        var regexPattern = name + @"\s*#\(\w+\)";
+        var regex = new Regex(regexPattern);
+
+        foreach (var playerName in playerNameList)
+        {
+            if (playerName == name)
+                return Task.FromResult(true);
+            if (isWanjiaBro && regex.IsMatch(playerName))
+                return Task.FromResult(true);
+        }
+
+        return Task.FromResult(false);
     }
 
     public async Task<Server> QueryServer(ServerInfo info)
@@ -157,14 +188,14 @@ public class FysServerManager : IFysServerServiceBase, IServerInfoSearcher, ISer
 
         if (server is not FysServer fysServer)
         {
-            logger.LogError(
+            logger.LogErrorEx(
                 $"Can't update server because param is not FysServer object:({server.GetType().FullName})");
             return;
         }
 
         if (!cacheEventStreamServerMap.TryGetValue(server.Info.EndPointDescription, out var etServer))
         {
-            logger.LogError(
+            logger.LogErrorEx(
                 "Can't update server because related event-stream server is not found");
             return;
         }
@@ -174,6 +205,10 @@ public class FysServerManager : IFysServerServiceBase, IServerInfoSearcher, ISer
 
     private async void Initialize()
     {
+#if DEBUG
+        if (DesignModeHelper.IsDesignMode)
+            return; //NOT SUPPORT IN DESIGN MODE
+#endif
         fysServerSettings = await persistence.Load<FysServerSettings>();
     }
 
@@ -193,14 +228,18 @@ public class FysServerManager : IFysServerServiceBase, IServerInfoSearcher, ISer
     private async void OnPullThread(TaskCompletionSource taskCompletionSource,
         CancellationToken cancellationToken)
     {
-        logger.LogInformation("event-stream thread start.");
+#if DEBUG
+        if (DesignModeHelper.IsDesignMode)
+            return; //NOT SUPPORT IN DESIGN MODE
+#endif
+        logger.LogInformationEx("event-stream thread start.");
         var timeInterval = TimeSpan.FromSeconds(fysServerSettings.EventDataRefreshInterval);
-        
+
         while (!cancellationToken.IsCancellationRequested)
         {
             try
             {
-                logger.LogDebug("event-stream request sent.");
+                logger.LogDebugEx("event-stream request sent.");
                 var resp = await httpFactory.SendAsync("https://fyscs.com/silverwing/system/dashboard", req =>
                 {
                     req.Method = HttpMethod.Get;
@@ -210,7 +249,7 @@ public class FysServerManager : IFysServerServiceBase, IServerInfoSearcher, ISer
                     req.Headers.Add("User-Agent",
                         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0");
                 }, cancellationToken);
-                logger.LogDebug("event-stream response reached.");
+                logger.LogDebugEx("event-stream response reached.");
 
                 var jsonContent = await resp.Content.ReadAsStringAsync(cancellationToken);
                 var eventStreamData = JsonSerializer.Deserialize<EventStreamData>(jsonContent);
@@ -222,13 +261,13 @@ public class FysServerManager : IFysServerServiceBase, IServerInfoSearcher, ISer
             }
             catch (Exception e)
             {
-                logger.LogError(e, "deserialize/update event-stream data failed.");
+                logger.LogErrorEx(e, "deserialize/update event-stream data failed.");
             }
 
-            await Task.Delay(timeInterval, cancellationToken);
+            await Task.Delay(timeInterval, default);
         }
 
-        logger.LogInformation("event-stream thread end.");
+        logger.LogInformationEx("event-stream thread end.");
     }
 
     private async void OnEventStreamThread(TaskCompletionSource taskCompletionSource,
@@ -246,14 +285,14 @@ public class FysServerManager : IFysServerServiceBase, IServerInfoSearcher, ISer
 
         await using var respStream =
             await client.GetStreamAsync("https://fyscs.com/silverwing/EventStream/dashboard", cancellationToken);
-        logger.LogDebug("event-stream response reached.");
+        logger.LogDebugEx("event-stream response reached.");
         using var reader = new StreamReader(respStream);
 
         while (!reader.EndOfStream)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                logger.LogInformation("stop OnEventStreamThread() cause cancellation requested");
+                logger.LogInformationEx("stop OnEventStreamThread() cause cancellation requested");
                 break;
             }
 
@@ -272,17 +311,17 @@ public class FysServerManager : IFysServerServiceBase, IServerInfoSearcher, ISer
             }
             catch (Exception e)
             {
-                logger.LogError(e, $"deserialize/update event-stream data failed. line= {line}");
+                logger.LogErrorEx(e, $"deserialize/update event-stream data failed. line= {line}");
             }
         }
 
-        logger.LogInformation("event-stream response end.");
+        logger.LogInformationEx("event-stream response end.");
     }
 
     private void UpdateEventStreamData(EventStreamData eventStreamData)
     {
         currentCachedEventStreamData = eventStreamData;
-        logger.LogInformation("event-stream data updated.");
+        logger.LogInformationEx("event-stream data updated.");
 
         foreach (var (map, translation) in eventStreamData.Servers.Select(x => (x.Map, x.Translation)))
             mapManager.CacheMapTranslationName(map, translation, false);

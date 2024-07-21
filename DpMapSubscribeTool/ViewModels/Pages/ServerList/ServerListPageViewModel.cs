@@ -45,8 +45,7 @@ public partial class ServerListPageViewModel : PageViewModelBase
     [RelayCommand]
     private void ShowToast(Server server)
     {
-        applicationNotification.NofityServerForSubscribeMap(server, default,
-            () => ServerManager.JoinServer(server).NoWait());
+        applicationNotification.NofitySqueezeJoinSuccess(server.Info).NoWait();
     }
 
     [RelayCommand]

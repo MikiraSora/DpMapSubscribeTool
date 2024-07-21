@@ -6,81 +6,183 @@
              xmlns:ic="clr-namespace:FluentIcons.Avalonia;assembly=FluentIcons.Avalonia"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              xmlns:ct="clr-namespace:DpMapSubscribeTool.Controls"
+             xmlns:controls="clr-namespace:FluentAvalonia.UI.Controls;assembly=FluentAvalonia.ProgressRing"
+             xmlns:behaviorActions="clr-namespace:DpMapSubscribeTool.Controls.BehaviorActions"
              x:Class="DpMapSubscribeTool.Views.MainView"
              x:DataType="vm:MainViewModel">
-  <Design.DataContext>
-    <!-- This only sets the DataContext for the previewer in an IDE,
+    <Design.DataContext>
+        <!-- This only sets the DataContext for the previewer in an IDE,
          to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
-    <vm:MainViewModel />
-  </Design.DataContext>
+        <vm:MainViewModel />
+    </Design.DataContext>
 
-	<SplitView IsPaneOpen="{Binding IsPaneOpen}"
+    <SplitView IsPaneOpen="{Binding IsPaneOpen}"
                CompactPaneLength="48"
                DisplayMode="CompactInline"
                OpenPaneLength="200">
-		<SplitView.Pane>
-			<Grid RowDefinitions="*,*">
-				<StackPanel Orientation="Vertical"
+        <SplitView.Pane>
+            <Grid RowDefinitions="*,*">
+                <StackPanel Orientation="Vertical"
                             Spacing="5"
                             HorizontalAlignment="Stretch"
                             VerticalAlignment="Top">
-					<Button HorizontalAlignment="Left"
+                    <Button HorizontalAlignment="Left"
                             Width="32"
                             Height="32"
                             Margin="8 10"
                             Command="{Binding TriggerPaneCommand}">
-						<ic:SymbolIcon Symbol="AppsList" FontSize="20" IsFilled="True" VerticalAlignment="Center" />
-					</Button>
-					<ListBox Margin="5 0" Padding="0" ItemsSource="{Binding TopItems}"
+                        <ic:SymbolIcon Symbol="AppsList" FontSize="20" IsFilled="True" VerticalAlignment="Center" />
+                    </Button>
+                    <ListBox Margin="5 0" Padding="0" ItemsSource="{Binding TopItems}"
                              SelectedItem="{Binding SelectedListItem}">
-						<ListBox.Styles>
-							<Style Selector="ListBoxItem">
-								<Setter Property="Padding" Value="10 8" />
-							</Style>
-						</ListBox.Styles>
-						<ListBox.ItemTemplate>
-							<DataTemplate DataType="{x:Type ct:ListItemTemplate}">
-								<StackPanel Spacing="15" Orientation="Horizontal">
-									<ic:SymbolIcon Symbol="{Binding IconSymbol}" FontSize="20"
+                        <ListBox.Styles>
+                            <Style Selector="ListBoxItem">
+                                <Setter Property="Padding" Value="10 8" />
+                            </Style>
+                        </ListBox.Styles>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate DataType="{x:Type ct:ListItemTemplate}">
+                                <StackPanel Spacing="15" Orientation="Horizontal">
+                                    <ic:SymbolIcon Symbol="{Binding IconSymbol}" FontSize="20"
                                                    VerticalAlignment="Center" />
-									<TextBlock Text="{Binding Label}" />
-								</StackPanel>
-							</DataTemplate>
-						</ListBox.ItemTemplate>
-					</ListBox>
-				</StackPanel>
+                                    <TextBlock Text="{Binding Label}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </StackPanel>
 
-				<Grid Grid.Row="1">
-					<ListBox VerticalAlignment="Bottom" Margin="5 0" Padding="0" ItemsSource="{Binding BottomItems}"
+                <Grid Grid.Row="1">
+                    <ListBox VerticalAlignment="Bottom" Margin="5 0" Padding="0" ItemsSource="{Binding BottomItems}"
                              SelectedItem="{Binding SelectedListItem}">
-						<ListBox.Styles>
-							<Style Selector="ListBoxItem">
-								<Setter Property="Padding" Value="10 8" />
-							</Style>
-						</ListBox.Styles>
-						<ListBox.ItemTemplate>
-							<DataTemplate DataType="{x:Type ct:ListItemTemplate}">
-								<StackPanel Spacing="15" Orientation="Horizontal">
-									<ic:SymbolIcon Symbol="{Binding IconSymbol}" FontSize="20"
+                        <ListBox.Styles>
+                            <Style Selector="ListBoxItem">
+                                <Setter Property="Padding" Value="10 8" />
+                            </Style>
+                        </ListBox.Styles>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate DataType="{x:Type ct:ListItemTemplate}">
+                                <StackPanel Spacing="15" Orientation="Horizontal">
+                                    <ic:SymbolIcon Symbol="{Binding IconSymbol}" FontSize="20"
                                                    VerticalAlignment="Center" />
-									<TextBlock Text="{Binding Label}" />
-								</StackPanel>
-							</DataTemplate>
-						</ListBox.ItemTemplate>
-					</ListBox>
-				</Grid>
-			</Grid>
-		</SplitView.Pane>
+                                    <TextBlock Text="{Binding Label}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Grid>
+        </SplitView.Pane>
 
-		<SplitView.Content>
-			<Border CornerRadius="12 0 0 0">
-				<Grid>
-					<TransitioningContentControl Content="{Binding MainPageContent}" />
-					<!--<Grid ColumnDefinitions="*,2*,*">
-						<notification:NotificationMessageContainer Grid.Column="1" Manager="{Binding MessageManager}" />
-					</Grid>-->
-				</Grid>
-			</Border>
-		</SplitView.Content>
-	</SplitView>
+        <SplitView.Content>
+            <Border CornerRadius="12 0 0 0">
+                <Grid>
+                    <TransitioningContentControl Content="{Binding MainPageContent}" />
+
+                    <Border
+                        IsHitTestVisible="{Binding ServerManager.CurrentSqueezeJoinTaskStatus, 
+                            Converter={x:Static ObjectConverters.IsNotNull}}"
+                        IsEnabled="{Binding ServerManager.CurrentSqueezeJoinTaskStatus, 
+                            Converter={x:Static ObjectConverters.IsNotNull}}"
+                        IsVisible="{Binding ServerManager.CurrentSqueezeJoinTaskStatus, 
+                            Converter={x:Static ObjectConverters.IsNotNull}}"
+                        Name="squeezeJoinTaskStatus" CornerRadius="20,0,0,20" HorizontalAlignment="Right"
+                        VerticalAlignment="Bottom" Margin="10,10,0,10"
+                        Background="DarkCyan"
+                        Padding="10,5,15,5">
+                        <FlyoutBase.AttachedFlyout>
+                            <Flyout ShowMode="TransientWithDismissOnPointerMoveAway" Placement="AnchorAndGravity"
+                                    PlacementGravity="TopLeft" PlacementAnchor="BottomRight">
+                                <Border Padding="20,10" Background="DarkCyan" CornerRadius="5">
+                                    <Border.Styles>
+                                        <Style Selector="Label">
+                                            <Setter Property="Foreground" Value="White" />
+                                        </Style>
+                                        <Style Selector="TextBlock">
+                                            <Setter Property="Foreground" Value="White" />
+                                        </Style>
+                                    </Border.Styles>
+                                    <StackPanel>
+                                        <StackPanel Margin="0,5" Orientation="Horizontal">
+                                            <controls:ProgressRing Foreground="Lime" Background="Transparent"
+                                                                   BorderThickness="5" IsIndeterminate="True" />
+                                            <Label FontSize="18" Margin="10,0,0,0" FontWeight="Bold"
+                                                   VerticalAlignment="Center"
+                                                   Content="正在挤服..." />
+                                        </StackPanel>
+                                        <Rectangle Height="3"
+                                                   Fill="{StaticResource SystemControlBackgroundBaseLowBrush}" />
+                                        <Grid Margin="5" ColumnDefinitions="Auto,*" RowDefinitions="*,*,*,*,*">
+                                            <!---->
+                                            <Label Grid.Column="0" Grid.Row="0" Content="服务器:"
+                                                   VerticalAlignment="Center"
+                                                   HorizontalAlignment="Right" />
+                                            <TextBlock Grid.Column="1" Grid.Row="0"
+                                                       Text="{Binding ServerManager.CurrentSqueezeJoinTaskStatus.Server.Info.Name}"
+                                                       FontWeight="Bold"
+                                                       VerticalAlignment="Center" />
+                                            <!---->
+                                            <Label Grid.Column="0" Grid.Row="1" Content="所属社区:"
+                                                   VerticalAlignment="Center"
+                                                   HorizontalAlignment="Right" />
+                                            <TextBlock Grid.Column="1" Grid.Row="1"
+                                                       Text="{Binding ServerManager.CurrentSqueezeJoinTaskStatus.Server.Info.ServerGroupDisplay}"
+                                                       FontWeight="Bold"
+                                                       VerticalAlignment="Center" />
+                                            <!---->
+                                            <Label Grid.Column="0" Grid.Row="2" Content="地图:"
+                                                   VerticalAlignment="Center"
+                                                   HorizontalAlignment="Right" />
+                                            <TextBlock Grid.Column="1" Grid.Row="2"
+                                                       Text="{Binding ServerManager.CurrentSqueezeJoinTaskStatus.Server.Map}"
+                                                       FontWeight="Bold"
+                                                       VerticalAlignment="Center" />
+                                            <!---->
+                                            <Label Grid.Column="0" Grid.Row="3" Content="人数:"
+                                                   VerticalAlignment="Center"
+                                                   HorizontalAlignment="Right" />
+                                            <TextBlock Grid.Column="1" Grid.Row="3" FontWeight="Bold"
+                                                       VerticalAlignment="Center">
+                                                <TextBlock.Text>
+                                                    <MultiBinding StringFormat="{}{0}/{1}">
+                                                        <Binding
+                                                            Path="ServerManager.CurrentSqueezeJoinTaskStatus.Server.CurrentPlayerCount" />
+                                                        <Binding
+                                                            Path="ServerManager.CurrentSqueezeJoinTaskStatus.Server.MaxPlayerCount" />
+                                                    </MultiBinding>
+                                                </TextBlock.Text>
+                                            </TextBlock>
+                                        </Grid>
+                                        <Rectangle Height="3" Margin="0,5"
+                                                   Fill="{StaticResource SystemControlBackgroundBaseLowBrush}" />
+                                        <StackPanel Orientation="Horizontal">
+                                            <Label FontSize="15" FontWeight="Bold"
+                                                   VerticalAlignment="Center"
+                                                   Content="{Binding ServerManager.CurrentSqueezeJoinTaskStatus.RemainPlayerCountWaiting,StringFormat=还差 {0} 人空位}" />
+                                            <Button Command="{Binding StopSqueezeJoinServerTaskCommand}" Content="取消"
+                                                    Foreground="White" Padding="10,5" Margin="5,0" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </Flyout>
+                        </FlyoutBase.AttachedFlyout>
+                        <Interaction.Behaviors>
+                            <EventTriggerBehavior EventName="Tapped">
+                                <behaviorActions:ShowFlyoutAction />
+                            </EventTriggerBehavior>
+                        </Interaction.Behaviors>
+                        <Grid>
+                            <StackPanel Orientation="Horizontal">
+                                <controls:ProgressRing Foreground="Lime" Background="Transparent"
+                                                       BorderThickness="5" IsIndeterminate="True" />
+                                <Label Margin="10,0,0,0" FontWeight="Bold" VerticalAlignment="Center"
+                                       Foreground="White"
+                                       Content="正在挤服..." />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Border>
+        </SplitView.Content>
+    </SplitView>
 </UserControl>

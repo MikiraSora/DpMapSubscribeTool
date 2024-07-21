@@ -21,7 +21,7 @@ namespace DpMapSubscribeTool.Desktop.ServiceImplement.Notifications;
 [RegisterInjectable(typeof(IApplicationNotification), ServiceLifetime.Singleton)]
 public class DefaultApplicationNotification : IApplicationNotification
 {
-    private readonly Dictionary<string, Action> cachedCallbackMap = new();
+    private readonly Dictionary<string, Action<UserReaction>> cachedCallbackMap = new();
     private readonly Dictionary<Notification, string> currentNotications = new();
     private readonly ILogger<DefaultApplicationNotification> logger;
     private readonly IMapManager mapManager;
@@ -47,29 +47,43 @@ public class DefaultApplicationNotification : IApplicationNotification
         Initialize();
     }
 
-    public void NofityServerForSubscribeMap(Server server, MapSubscribe subscribe, Action userComfirmCallback)
+    public void NofityServerForSubscribeMap(Server server, MapSubscribe subscribe,
+        Action<UserReaction> userComfirmCallback)
     {
         if (!applicationSettings.EnableNotication)
             return;
         var isGaming = CheckIfGaming();
         if (isGaming && !applicationSettings.EnableNoticationIfGameForeground)
         {
-            logger.LogInformation("raise notification but user is gaming, ignored.");
+            logger.LogInformationEx("raise notification but user is gaming, ignored.");
             return;
         }
 
         if (applicationSettings.EnableNoticationBySound)
             PlaySound();
         if (applicationSettings.EnableNoticationByTaskbar)
-            NotifyTaskBar(server, subscribe, userComfirmCallback);
+            NotifySqueezeJoinServerSuccessTaskBar(server, subscribe, userComfirmCallback);
     }
 
-    private void OnNotificationDismissed(object sender, NotificationDismissedEventArgs e)
+    public void NofitySqueezeJoinSuccess(ServerInfo serverInfo, Action<UserReaction> userComfirmCallback)
     {
-        if (sender is Notification notification)
-            if (currentNotications.TryGetValue(notification, out var actionId))
-                logger.LogInformation($"actionId {actionId} notification has been dismiss by reason:{e.Reason}");
+        if (!applicationSettings.EnableNotication)
+            return;
+        var isGaming = CheckIfGaming();
+        if (isGaming && !applicationSettings.EnableNoticationIfGameForeground)
+        {
+            logger.LogInformationEx("raise notification but user is gaming, ignored.");
+            return;
+        }
 
+        if (applicationSettings.EnableNoticationBySound)
+            PlaySound();
+        if (applicationSettings.EnableNoticationByTaskbar)
+            NotifySqueezeJoinServerSuccessTaskBar(serverInfo, userComfirmCallback);
+    }
+
+    private void DismissAllAndClear()
+    {
         if (isDismissOthers)
             return;
         isDismissOthers = true;
@@ -82,31 +96,42 @@ public class DefaultApplicationNotification : IApplicationNotification
         isDismissOthers = false;
     }
 
+    private void OnNotificationDismissed(object sender, NotificationDismissedEventArgs e)
+    {
+        var notification = e.Notification;
+        if (currentNotications.TryGetValue(notification, out var actionId))
+        {
+            logger.LogInformationEx($"actionId {actionId} notification has been dismiss by reason:{e.Reason}");
+            if (cachedCallbackMap.TryGetValue(actionId, out var callback))
+                callback(UserReaction.Dismiss);
+            else if ("default" != actionId)
+                logger.LogWarningEx($"invalided actionId: {actionId}");
+            cachedCallbackMap.Remove(actionId);
+        }
+
+        currentNotications.Remove(notification);
+
+        DismissAllAndClear();
+    }
+
     private void OnNotificationActivated(object sender, NotificationActivatedEventArgs e)
     {
+        if (sender is Notification notification)
+            currentNotications.Remove(notification);
+
         var actionId = e.ActionId;
         if (cachedCallbackMap.TryGetValue(actionId, out var callback))
         {
-            logger.LogWarning($"user clicked actionId: {actionId}");
+            logger.LogInformationEx($"user clicked actionId: {actionId}");
             cachedCallbackMap.Remove(actionId);
-            callback?.Invoke();
+            callback(UserReaction.Dismiss);
         }
-        else
+        else if ("default" != actionId)
         {
-            logger.LogWarning($"invalided actionId: {actionId}");
+            logger.LogWarningEx($"invalided actionId: {actionId}");
         }
 
-        if (isDismissOthers)
-            return;
-        isDismissOthers = true;
-        //dismiss other notifications.
-        foreach (var unusedNotificationPair in currentNotications.Where(unusedNotificationPair =>
-                     unusedNotificationPair.Value != actionId))
-            notificationManager.HideNotification(unusedNotificationPair.Key);
-        //clear all
-        currentNotications.Clear();
-        cachedCallbackMap.Clear();
-        isDismissOthers = false;
+        DismissAllAndClear();
     }
 
     [DllImport("user32.dll")]
@@ -117,17 +142,43 @@ public class DefaultApplicationNotification : IApplicationNotification
 
     private async void Initialize()
     {
+#if DEBUG
+        if (DesignModeHelper.IsDesignMode)
+            return; //NOT SUPPORT IN DESIGN MODE
+#endif
         applicationSettings = await persistence.Load<ApplicationSettings>();
     }
 
-    private void NotifyTaskBar(Server server, MapSubscribe subscribe, Action userComfirmCallback)
+    private void CreateCommonNotifyTaskBar(string title, string content, string buttonText,
+        Action<UserReaction> buttonCallback)
     {
         var actionId = RandomHepler.RandomString();
-        cachedCallbackMap[actionId] = userComfirmCallback;
+        cachedCallbackMap[actionId] = buttonCallback;
 
         var notification = new Notification();
-        notification.Title = "出现订阅地图！";
+        notification.Title = title;
 
+        notification.Body = content;
+
+        notification.Buttons.Add(new ValueTuple<string, string>(buttonText, actionId));
+
+        notificationManager.ShowNotification(notification, DateTimeOffset.Now + TimeSpan.FromSeconds(15));
+        currentNotications[notification] = actionId;
+        logger.LogInformationEx($"show new notification, actionId: {actionId}");
+    }
+
+    private void NotifySqueezeJoinServerSuccessTaskBar(ServerInfo serverInfo, Action<UserReaction> userComfirmCallback)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"社区: {serverInfo.ServerGroupDisplay}  服务器名: {serverInfo.Name}");
+        sb.AppendLine("挤服功能已检测到服务器人数空闲,已执行进入服务器命令,请切回游戏检查是否成功");
+
+        CreateCommonNotifyTaskBar("挤服成功！", sb.ToString(), "关闭", userComfirmCallback);
+    }
+
+    private void NotifySqueezeJoinServerSuccessTaskBar(Server server, MapSubscribe subscribe,
+        Action<UserReaction> userComfirmCallback)
+    {
         var mapTranslationName = mapManager.GetMapTranslationName(server.Map);
         mapTranslationName = !string.IsNullOrWhiteSpace(mapTranslationName) ? $"({mapTranslationName})" : string.Empty;
 
@@ -135,11 +186,8 @@ public class DefaultApplicationNotification : IApplicationNotification
         sb.AppendLine($"社区: {server.Info.ServerGroupDisplay}  服务器名: {server.Info.Name}");
         sb.AppendLine($"地图: {server.Map} {mapTranslationName}");
         sb.AppendLine($"当前人数: {server.CurrentPlayerCount}/{server.MaxPlayerCount}");
-        notification.Body = sb.ToString();
 
-        notification.Buttons.Add(new ValueTuple<string, string>("加入服务器！", actionId));
-        notificationManager.ShowNotification(notification, DateTimeOffset.Now + TimeSpan.FromSeconds(15));
-        currentNotications[notification] = actionId;
+        CreateCommonNotifyTaskBar("出现订阅地图！", sb.ToString(), "加入服务器！", userComfirmCallback);
     }
 
     private bool CheckIfGaming()
@@ -169,7 +217,7 @@ public class DefaultApplicationNotification : IApplicationNotification
 
     private void PrepareAudio()
     {
-        if (audioFile != null)
+        if (audioFile == null)
         {
             //check file changed.
             if (currentLoadedSoundFilePath == applicationSettings.NoticationSoundFilePath)
@@ -191,7 +239,7 @@ public class DefaultApplicationNotification : IApplicationNotification
                         "DpMapSubscribeTool.Desktop.Resources.notification.mp3");
                 using var fs = File.OpenWrite(filePath);
                 rs.CopyTo(fs);
-                logger.LogInformation(
+                logger.LogInformationEx(
                     $"file {applicationSettings.NoticationSoundFilePath} is not found,extract resource notication.mp3 to {filePath} and use.");
             }
 
@@ -200,11 +248,11 @@ public class DefaultApplicationNotification : IApplicationNotification
             outputDevice.Init(audioFile);
 
             currentLoadedSoundFilePath = filePath;
-            logger.LogInformation($"loaded sound file for notification: {currentLoadedSoundFilePath}");
+            logger.LogInformationEx($"loaded sound file for notification: {currentLoadedSoundFilePath}");
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, $"Can't prepare sound for notification: {ex.Message}");
+            logger.LogErrorEx(ex, $"Can't prepare sound for notification: {ex.Message}");
             currentLoadedSoundFilePath = default;
         }
     }

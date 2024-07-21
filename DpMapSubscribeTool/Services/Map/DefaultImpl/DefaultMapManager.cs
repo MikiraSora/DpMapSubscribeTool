@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using DpMapSubscribeTool.Services.Persistences;
+using DpMapSubscribeTool.Utils;
 using DpMapSubscribeTool.Utils.Injections;
 using DpMapSubscribeTool.Utils.MethodExtensions;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,7 +34,7 @@ public class DefaultMapManager : IMapManager
     {
         if (translationMapData.TranslationNames.TryGetValue(mapName, out var oldTranslationName))
             if (enableOverwrite)
-                logger.LogInformation(
+                logger.LogInformationEx(
                     $"overwrite map {mapName} translation name: {oldTranslationName} -> {mapTranslationName}");
             else
                 return;
@@ -42,6 +43,10 @@ public class DefaultMapManager : IMapManager
 
     private async void Initialize()
     {
+#if DEBUG 
+        if (DesignModeHelper.IsDesignMode)
+            return; //NOT SUPPORT IN DESIGN MODE
+#endif
         translationMapData = await persistence.Load<TranslationMapData>();
         Task.Run(OnAutoSaveDataTask).NoWait();
     }
@@ -53,12 +58,12 @@ public class DefaultMapManager : IMapManager
             try
             {
                 await persistence.Save(translationMapData);
-                logger.LogDebug("TranslationMapData saved.");
+                logger.LogDebugEx("TranslationMapData saved.");
                 await Task.Delay(TimeSpan.FromSeconds(15));
             }
             catch (Exception e)
             {
-                logger.LogError(e,$"TranslationMapData failed: {e.Message}");
+                logger.LogErrorEx(e,$"TranslationMapData failed: {e.Message}");
             }
         }
     }

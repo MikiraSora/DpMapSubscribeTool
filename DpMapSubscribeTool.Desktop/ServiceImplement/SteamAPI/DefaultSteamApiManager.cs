@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using DpMapSubscribeTool.Services.SteamAPI;
+using DpMapSubscribeTool.Utils;
 using DpMapSubscribeTool.Utils.Injections;
 using Microsoft.Extensions.Logging;
 using Steamworks;
@@ -22,7 +23,7 @@ public class DefaultSteamApiManager : ISteamAPIManager, IDisposable
     {
         Steamworks.SteamAPI.Shutdown();
         IsEnable = false;
-        logger.LogWarning("SteamAPI shutdown.");
+        logger.LogDebugEx("SteamAPI shutdown.");
     }
 
     public bool IsEnable { get; private set; }
@@ -34,7 +35,7 @@ public class DefaultSteamApiManager : ISteamAPIManager, IDisposable
 
         if (!Steamworks.SteamAPI.IsSteamRunning())
         {
-            logger.LogError("Can't get user name because Steam is not running.");
+            logger.LogErrorEx("Can't get user name because Steam is not running.");
             return Task.FromResult(new QueryUserNameResult(false, default));
         }
 
@@ -43,6 +44,10 @@ public class DefaultSteamApiManager : ISteamAPIManager, IDisposable
 
     private async void Initialize()
     {
+#if DEBUG
+        if (DesignModeHelper.IsDesignMode)
+            return; //NOT SUPPORT IN DESIGN MODE
+#endif
         var isRunning = Steamworks.SteamAPI.IsSteamRunning();
         for (var i = 0; i < 10; i++)
         {
@@ -52,17 +57,17 @@ public class DefaultSteamApiManager : ISteamAPIManager, IDisposable
             await Task.Delay(100);
         }
 
-        logger.LogInformation($"SteamAPI initialized, isRunning = {isRunning}, IsEnable = {IsEnable}.");
+        logger.LogInformationEx($"SteamAPI initialized, isRunning = {isRunning}, IsEnable = {IsEnable}.");
 
         if (!Packsize.Test())
         {
-            logger.LogWarning("Program is using the wrong Steamworks.NET Assembly for this platform!");
+            logger.LogWarningEx("Program is using the wrong Steamworks.NET Assembly for this platform!");
             IsEnable = false;
         }
 
         if (!DllCheck.Test())
         {
-            logger.LogWarning("Program is using the wrong dlls for this platform!");
+            logger.LogWarningEx("Program is using the wrong dlls for this platform!");
             IsEnable = false;
         }
     }
