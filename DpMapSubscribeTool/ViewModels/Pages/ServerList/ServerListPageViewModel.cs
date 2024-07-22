@@ -20,6 +20,12 @@ public partial class ServerListPageViewModel : PageViewModelBase
     private readonly ILogger<ServerListPageViewModel> logger;
 
     [ObservableProperty]
+    private bool isShowFilterPane;
+    
+    [ObservableProperty]
+    private bool isSplitPaneOpen;
+
+    [ObservableProperty]
     private IServerManager serverManager;
 
     public ServerListPageViewModel()
@@ -49,23 +55,27 @@ public partial class ServerListPageViewModel : PageViewModelBase
     {
         await ServerManager.JoinServer(server);
     }
-    
-    [RelayCommand]
-    private async Task OpenFilterPanel()
-    {
-        
-    }
 
     [RelayCommand]
     private async Task RefreshFilterServerList()
     {
         await ServerManager.RefreshFilterServers();
     }
-    
+
     [RelayCommand]
     private async Task ResetServerListFilterOptions()
     {
         await ServerManager.ResetServerListFilterOptions();
+    }
+
+    [RelayCommand]
+    private void ServerDoubleTapped(Server server)
+    {
+        
+        //SplitPane.Pane switch to server info content.
+        IsShowFilterPane = false;
+        //open SplitPane.Pane
+        IsSplitPaneOpen = true;
     }
 
     [RelayCommand]

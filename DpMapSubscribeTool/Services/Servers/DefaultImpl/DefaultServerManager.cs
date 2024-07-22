@@ -37,8 +37,7 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
 
     private ApplicationSettings applicationSetting;
 
-    private TimeSpan autoPingTimeInterval;
-    private TimeSpan autoRefreshTimeInterval;
+    private ServerInfomationDetail currentServerInfoDetail;
 
     [ObservableProperty]
     private ServerListFilterOptions currentServerListFilterOptions;
@@ -48,6 +47,8 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
 
     [ObservableProperty]
     private ObservableCollection<Server> filterServers = new();
+
+    private CancellationTokenSource infoQueryCancellationTokenSource;
 
     [ObservableProperty]
     private bool isDataReady;
@@ -237,6 +238,121 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
         return Task.CompletedTask;
     }
 
+    public Task ResetServerListFilterOptions()
+    {
+        var newOption = new ServerListFilterOptions();
+
+        foreach (var (serverGroup, serverGroupDescription) in serverSearchers.Values.Select(x =>
+                     (x.ServerGroup, x.ServerGroupDescription)))
+            newOption.ServerGroupFilters.Add(new ServerGroupFilter
+            {
+                ServiceGroupDescription = serverGroupDescription,
+                ServiceGroup = serverGroup,
+                IsEnable = true
+            });
+
+        CurrentServerListFilterOptions = newOption;
+        logger.LogInformationEx("current server list filter option is reset.");
+        return Task.CompletedTask;
+    }
+
+    public async Task<ServerInfomationDetail> BeginServerInfomationDetailQuery(ServerInfo serverInfo)
+    {
+        if (currentServerInfoDetail != null)
+        {
+            logger.LogWarningEx("there is a detail object is running, stop now.");
+            await StopServerInfomationDetailQuery();
+        }
+
+        var cr = new ServerInfomationDetail();
+        if (Servers.FirstOrDefault(x => x.Info.EndPointDescription == serverInfo.EndPointDescription) is not Server
+            server)
+        {
+            logger.LogErrorEx($"Can't find related Server object for info: {serverInfo.Name}");
+            await dialogManager.ShowMessageDialog("", DialogMessageType.Error);
+            return null;
+        }
+
+        infoQueryCancellationTokenSource = new CancellationTokenSource();
+        cr.Server = server;
+        Task.Run(() => OnAutoUpdateServerInfomationTask(cr, infoQueryCancellationTokenSource.Token),
+            infoQueryCancellationTokenSource.Token).NoWait();
+        return currentServerInfoDetail = cr;
+    }
+
+    public Task StopServerInfomationDetailQuery()
+    {
+        infoQueryCancellationTokenSource?.Cancel();
+        infoQueryCancellationTokenSource?.Dispose();
+        infoQueryCancellationTokenSource = default;
+
+        if (currentServerInfoDetail is not null)
+        {
+            logger.LogInformationEx(
+                $"server {currentServerInfoDetail.Server.Info.Name} infomation query task had been stopped.");
+            currentServerInfoDetail = default;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private async void OnAutoUpdateServerInfomationTask(ServerInfomationDetail detail, CancellationToken ct)
+    {
+        var interval = TimeSpan.FromSeconds(60);
+
+        using var gameServer = new GameServer(detail.Server.Info.Host, detail.Server.Info.Port);
+
+        while (!ct.IsCancellationRequested)
+        {
+            var info = await gameServer.GetInformationAsync(ct);
+
+            if (detail.Server.CurrentPlayerCount != info.OnlinePlayers)
+                detail.Server.CurrentPlayerCount = info.OnlinePlayers;
+            if (detail.Server.MaxPlayerCount != info.MaxPlayers)
+                detail.Server.MaxPlayerCount = info.MaxPlayers;
+            if (detail.Server.Map != info.Map)
+                detail.Server.Map = info.Map;
+
+            var playerMap = (await gameServer.GetPlayersAsync(ct)).ToDictionary(x => x.Name, x => x);
+
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                foreach (var playerDetail in detail.PlayerDetails.ToArray())
+                    if (playerMap.TryGetValue(playerDetail.Name, out var player))
+                    {
+                        playerMap.Remove(playerDetail.Name);
+
+                        playerDetail.Duration = player.DurationTimeSpan;
+                        playerDetail.Score = player.Score;
+                    }
+                    else
+                    {
+                        //not found , means that player is leave
+                        detail.PlayerDetails.Remove(playerDetail);
+                    }
+
+                foreach (var player in playerMap.Values)
+                    detail.PlayerDetails.Add(new ServerInfomationPlayerDetail
+                    {
+                        Duration = player.DurationTimeSpan,
+                        Name = player.Name,
+                        Score = player.Score
+                    });
+
+                logger.LogDebugEx("");
+            });
+
+            try
+            {
+                await Task.Delay(interval, ct);
+            }
+            catch
+            {
+                // ignored
+            }
+        }
+    }
+
     private void ClearSqueezeJoinServer()
     {
         squeezeCancellationTokenSource = default;
@@ -385,32 +501,12 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
             return; //NOT SUPPORT IN DESIGN MODE
 #endif
         applicationSetting = await persistence.Load<ApplicationSettings>();
-        autoPingTimeInterval = TimeSpan.FromSeconds(applicationSetting.AutoPingTimeInterval);
-        autoRefreshTimeInterval = TimeSpan.FromSeconds(applicationSetting.AutoRefreshTimeInterval);
 
         ResetServerListFilterOptions().NoWait();
 
         //UpdateSubscribeServers();
         Task.Run(OnAutoPingAllServersTask).NoWait();
         Task.Run(OnAutoUpdateCurrentExistServersTask).NoWait();
-    }
-
-    public Task ResetServerListFilterOptions()
-    {
-        var newOption = new ServerListFilterOptions();
-
-        foreach (var (serverGroup, serverGroupDescription) in serverSearchers.Values.Select(x =>
-                     (x.ServerGroup, x.ServerGroupDescription)))
-            newOption.ServerGroupFilters.Add(new ServerGroupFilter
-            {
-                ServiceGroupDescription = serverGroupDescription,
-                ServiceGroup = serverGroup,
-                IsEnable = true
-            });
-
-        CurrentServerListFilterOptions = newOption;
-        logger.LogInformationEx("current server list filter option is reset.");
-        return Task.CompletedTask;
     }
 
     private void UpdateSubscribeServers()
@@ -433,6 +529,8 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
 
     private async void OnAutoUpdateCurrentExistServersTask()
     {
+        var autoUpdateTimeInterval = TimeSpan.FromSeconds(applicationSetting.AutoPingTimeInterval);
+
         logger.LogInformationEx("OnUpdateServerStateTask() begin");
 
         while (true)
@@ -441,7 +539,7 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
             //await RefreshServers();
 
             logger.LogDebugEx("updated all servers.");
-            await Task.Delay(autoPingTimeInterval);
+            await Task.Delay(autoUpdateTimeInterval);
         }
     }
 
@@ -455,9 +553,11 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
             var updater = PickServiceService(serverUpdaters, x);
             var before = x.CurrentPlayerCount;
             await updater?.UpdateServer(x);
+            /*
             if (before != x.CurrentPlayerCount)
                 logger.LogInformationEx(
                     $"server {x.Info.Name} playercount {before} -> {x.CurrentPlayerCount}");
+                    */
         }).ToArray();
 
         await Task.WhenAll(updateTasks);
@@ -475,6 +575,7 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
 
     private async void OnAutoPingAllServersTask()
     {
+        var autoPingTimeInterval = TimeSpan.FromSeconds(applicationSetting.AutoRefreshTimeInterval);
         logger.LogInformationEx("OnAutoPingTask() begin");
 
         while (true)

@@ -36,6 +36,13 @@ public static class IApplicationHttpFactoryEx
     public static async ValueTask<RESP> GetJson<RESP>(this IApplicationHttpFactory http, string url, object body,
         CancellationToken cancellation = default)
     {
+        var str = await http.GetString(url, body, cancellation);
+        return JsonSerializer.Deserialize<RESP>(str);
+    }
+
+    public static async ValueTask<string> GetString(this IApplicationHttpFactory http, string url, object body,
+        CancellationToken cancellation = default)
+    {
         var resp = await http.SendAsync(url, req =>
         {
             req.Method = HttpMethod.Get;
@@ -45,7 +52,7 @@ public static class IApplicationHttpFactoryEx
         }, cancellation);
 
         var str = await resp.Content.ReadAsStringAsync(cancellation);
-        return JsonSerializer.Deserialize<RESP>(str);
+        return str;
     }
 
     public static async ValueTask<T> Send<T>(this IApplicationHttpFactory http,

@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -32,6 +30,7 @@ public class FysServerManager : IFysServerServiceBase, IServerInfoSearcher, ISer
     IServerSqueezeJoinRunner,
     IServerActionExecutor
 {
+    private readonly CommonJoinServer commonJoinServer;
     private readonly IDialogManager dialogManager;
     private readonly IApplicationHttpFactory httpFactory;
     private readonly ILogger<FysServerManager> logger;
@@ -48,12 +47,13 @@ public class FysServerManager : IFysServerServiceBase, IServerInfoSearcher, ISer
     private FysServerSettings fysServerSettings;
 
     public FysServerManager(IApplicationHttpFactory httpFactory, ILogger<FysServerManager> logger,
-        IServiceProvider provider,
+        IServiceProvider provider, CommonJoinServer commonJoinServer,
         IMapManager mapManager, IDialogManager dialogManager, IPersistence persistence)
     {
         this.httpFactory = httpFactory;
         this.logger = logger;
         this.provider = provider;
+        this.commonJoinServer = commonJoinServer;
         this.mapManager = mapManager;
         this.dialogManager = dialogManager;
         this.persistence = persistence;
@@ -105,26 +105,9 @@ public class FysServerManager : IFysServerServiceBase, IServerInfoSearcher, ISer
     public string ServerGroup => "FYS";
     public string ServerGroupDescription => "风云社";
 
-    public async Task Join(ServerInfo serverInfo)
+    public Task Join(ServerInfo serverInfo)
     {
-        var ipList = await Dns.GetHostAddressesAsync(serverInfo.Host);
-        if (ipList.Length == 0)
-        {
-            logger.LogWarningEx($"Can't lookup ip address for host name:{serverInfo.Host}");
-            await dialogManager.ShowMessageDialog($"无法进入服务器，无法获取服务器ip地址({serverInfo.Host})", DialogMessageType.Error);
-            return;
-        }
-
-        var ipAddr = ipList.First();
-        //var steamCmd = $"steam://connect/{ipAddr}:{serverInfo.Port}";
-        var steamCmd = $"steam://rungame/730/76561202255233023/+connect%20{ipAddr}:{serverInfo.Port}";
-        logger.LogInformationEx($"execute steamCmd: {steamCmd}");
-        Process.Start(new ProcessStartInfo("cmd.exe")
-        {
-            UseShellExecute = true,
-            Arguments = $"/C start {steamCmd}",
-            CreateNoWindow = true
-        });
+        return commonJoinServer.JoinServer(serverInfo.Host, serverInfo.Port);
     }
 
     public async Task<IEnumerable<ServerInfo>> GetAllAvaliableServerInfo()
@@ -142,13 +125,14 @@ public class FysServerManager : IFysServerServiceBase, IServerInfoSearcher, ISer
     public async Task<bool> CheckSqueezeJoinServer(ServerInfo serverInfo, SqueezeJoinServerOption option,
         CancellationToken cancellationToken)
     {
+        /*
         if (string.IsNullOrWhiteSpace(fysServerSettings.PlayerName))
         {
             logger.LogWarningEx("no fys playerName");
             await dialogManager.ShowMessageDialog("Fys服务器挤服功能需要去本程序设置页面填写Fys服务器内自己的玩家名。");
             return false;
         }
-
+        */
         return true;
     }
 

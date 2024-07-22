@@ -42,6 +42,11 @@ public class DefaultSteamApiManager : ISteamAPIManager, IDisposable
         return Task.FromResult(new QueryUserNameResult(true, SteamFriends.GetPersonaName()));
     }
 
+    public async Task<byte[]> GetMapThumbPictureImageData(string mapName)
+    {
+        throw new NotImplementedException();
+    }
+
     private async void Initialize()
     {
 #if DEBUG

@@ -14,6 +14,7 @@
         IsReadOnly="True"
         SelectionMode="Single"
         VerticalScrollBarVisibility="Disabled"
+        DoubleTapped="HostDataGrid_OnDoubleTapped"
         AutoGenerateColumns="False"
         ItemsSource="{Binding Servers}">
         <DataGrid.Columns>
@@ -60,9 +61,14 @@
             <Style Selector="DataGridCell Rectangle">
                 <Setter Property="IsVisible" Value="False" />
             </Style>
+
             <Style Selector="DataGridRow">
                 <Setter Property="ContextMenu">
                     <ContextMenu>
+                        <MenuItem x:DataType="models:Server"
+                                  Command="{Binding #hostDataGrid.((controls:ServerList)DataContext).ServerDoubleTappedCommand}"
+                                  CommandParameter="{Binding .}"
+                                  Header="查看服务器" />
                         <MenuItem x:DataType="models:Server"
                                   Command="{Binding #hostDataGrid.((controls:ServerList)DataContext).JoinServerCommand}"
                                   CommandParameter="{Binding .}"

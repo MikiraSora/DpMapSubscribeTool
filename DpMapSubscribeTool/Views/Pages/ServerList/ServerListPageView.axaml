@@ -11,7 +11,7 @@
     <Design.DataContext>
         <serverList:ServerListPageViewModel />
     </Design.DataContext>
-    <SplitView PanePlacement="Right" OpenPaneLength="350" Name="splitView">
+    <SplitView IsPaneOpen="{Binding IsSplitPaneOpen}" PanePlacement="Right" OpenPaneLength="350" Name="splitView">
         <ScrollViewer>
             <StackPanel Name="host">
                 <!--Top Menu-->
@@ -28,11 +28,15 @@
                             <StackPanel>
                                 <WrapPanel Margin="5">
                                     <Button Margin="5,0" Command="{Binding  RefreshServersCommand}">刷新当前服务器</Button>
-                                    <Button Margin="5,0" Command="{Binding  OpenFilterPanelCommand}" Content="条件过滤">
+                                    <Button Margin="5,0" Content="条件过滤">
                                         <Interaction.Behaviors>
                                             <EventTriggerBehavior EventName="Click">
-                                                <ChangePropertyAction TargetObject="{Binding ElementName=splitView}"
-                                                                      Value="True" PropertyName="IsPaneOpen" />
+                                                <ChangePropertyAction
+                                                    TargetObject="{Binding ElementName=splitView,Path=DataContext}"
+                                                    Value="True" PropertyName="IsShowFilterPane" />
+                                                <ChangePropertyAction
+                                                    TargetObject="{Binding ElementName=splitView,Path=DataContext}"
+                                                    Value="True" PropertyName="IsSplitPaneOpen" />
                                             </EventTriggerBehavior>
                                         </Interaction.Behaviors>
                                     </Button>
@@ -54,6 +58,7 @@
                         <Expander.Content>
                             <controls1:ServerList JoinServerCommand="{Binding JoinServerCommand}"
                                                   Servers="{Binding ServerManager.FilterServers}"
+                                                  ServerDoubleTappedCommand="{Binding ServerDoubleTappedCommand}"
                                                   SqueezeJoinServerCommand="{Binding  SqueezeJoinServerCommand}" />
                         </Expander.Content>
                     </Expander>
@@ -71,6 +76,7 @@
                         <Expander.Content>
                             <controls1:ServerList JoinServerCommand="{Binding JoinServerCommand}"
                                                   Servers="{Binding ServerManager.SubscribeServers}"
+                                                  ServerDoubleTappedCommand="{Binding ServerDoubleTappedCommand}"
                                                   SqueezeJoinServerCommand="{Binding  SqueezeJoinServerCommand}" />
                         </Expander.Content>
                     </Expander>
@@ -87,6 +93,7 @@
                         <Expander.Content>
                             <controls1:ServerList JoinServerCommand="{Binding JoinServerCommand}"
                                                   Servers="{Binding ServerManager.Servers}"
+                                                  ServerDoubleTappedCommand="{Binding ServerDoubleTappedCommand}"
                                                   SqueezeJoinServerCommand="{Binding  SqueezeJoinServerCommand}" />
                         </Expander.Content>
                     </Expander>
@@ -94,10 +101,9 @@
             </StackPanel>
         </ScrollViewer>
         <SplitView.Pane>
-            <Border Margin="0,10" VerticalAlignment="Stretch"
+            <Border IsVisible="{Binding IsShowFilterPane}" Margin="0,10" VerticalAlignment="Stretch"
                     HorizontalAlignment="Center" Padding="5"
-                    Background="Transparent"
-                    Classes="ContentContainer">
+                    Background="Transparent">
                 <Grid RowDefinitions="*,Auto">
                     <StackPanel Margin="5,0">
                         <CheckBox Content="开启过滤功能"
