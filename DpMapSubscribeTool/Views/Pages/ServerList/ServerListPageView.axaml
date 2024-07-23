@@ -7,11 +7,17 @@
              xmlns:ic="clr-namespace:FluentIcons.Avalonia;assembly=FluentIcons.Avalonia"
              xmlns:models="clr-namespace:DpMapSubscribeTool.Models"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:DataType="serverList:ServerListPageViewModel"
              x:Class="DpMapSubscribeTool.Views.Pages.ServerList.ServerListPageView">
     <Design.DataContext>
         <serverList:ServerListPageViewModel />
     </Design.DataContext>
     <SplitView IsPaneOpen="{Binding IsSplitPaneOpen}" PanePlacement="Right" OpenPaneLength="350" Name="splitView">
+        <Interaction.Behaviors>
+            <EventTriggerBehavior EventName="PaneClosed">
+                <InvokeCommandAction Command="{Binding PaneClosedCommand}" />
+            </EventTriggerBehavior>
+        </Interaction.Behaviors>
         <ScrollViewer>
             <StackPanel Name="host">
                 <!--Top Menu-->
@@ -27,19 +33,8 @@
                         <Expander.Content>
                             <StackPanel>
                                 <WrapPanel Margin="5">
-                                    <Button Margin="5,0" Command="{Binding  RefreshServersCommand}">刷新当前服务器</Button>
-                                    <Button Margin="5,0" Content="条件过滤">
-                                        <Interaction.Behaviors>
-                                            <EventTriggerBehavior EventName="Click">
-                                                <ChangePropertyAction
-                                                    TargetObject="{Binding ElementName=splitView,Path=DataContext}"
-                                                    Value="True" PropertyName="IsShowFilterPane" />
-                                                <ChangePropertyAction
-                                                    TargetObject="{Binding ElementName=splitView,Path=DataContext}"
-                                                    Value="True" PropertyName="IsSplitPaneOpen" />
-                                            </EventTriggerBehavior>
-                                        </Interaction.Behaviors>
-                                    </Button>
+                                    <Button Margin="5,0" Content="刷新当前服务器" Command="{Binding  RefreshServersCommand}" />
+                                    <Button Margin="5,0" Content="条件过滤" Command="{Binding ShowFilterPaneCommand}" />
                                 </WrapPanel>
                             </StackPanel>
                         </Expander.Content>

@@ -26,6 +26,9 @@ public partial class SettingPageViewModel : PageViewModelBase
     private ApplicationSettings applicationSettings;
 
     [ObservableProperty]
+    private CustomServerSettings customServerSettings;
+
+    [ObservableProperty]
     private FysServerSettings fysServerSettings;
 
     [ObservableProperty]
@@ -67,6 +70,7 @@ public partial class SettingPageViewModel : PageViewModelBase
 
         ApplicationSettings = await persistence.Load<ApplicationSettings>();
         FysServerSettings = await persistence.Load<FysServerSettings>();
+        CustomServerSettings = await persistence.Load<CustomServerSettings>();
     }
 
     [RelayCommand]
@@ -82,6 +86,29 @@ public partial class SettingPageViewModel : PageViewModelBase
 
         ApplicationSettings.UserMapSubscribes.Add(newSubscribeRule);
         logger.LogInformationEx("User add new subscribe rule.");
+    }
+
+    [RelayCommand]
+    private void CreateNewCustomServerInfo()
+    {
+        var serverInfo = new ServerInfo
+        {
+            Host = "localhost",
+            Port = 2857,
+            ServerGroupDisplay = "反身盖土叛忍社",
+            ServerGroup = "Custom",
+            Name = "某个跳刀蛆の服务器"
+        };
+
+        CustomServerSettings.CustomServerInfos.Add(serverInfo);
+        logger.LogInformationEx("User add new custom server info.");
+    }
+
+    [RelayCommand]
+    private void DeleteCustomServerInfo(ServerInfo serverInfo)
+    {
+        CustomServerSettings.CustomServerInfos.Remove(serverInfo);
+        logger.LogInformationEx($"User remove custom server info, ep:{serverInfo.EndPointDescription}");
     }
 
     [RelayCommand]
@@ -115,6 +142,7 @@ public partial class SettingPageViewModel : PageViewModelBase
     {
         await SaveSettingInternal(ApplicationSettings);
         await SaveSettingInternal(FysServerSettings);
+        await SaveSettingInternal(CustomServerSettings);
         await dialogManager.ShowMessageDialog("选项已保存！");
     }
 
@@ -132,6 +160,7 @@ public partial class SettingPageViewModel : PageViewModelBase
             return;
         ApplicationSettings = await ResetSettingInternal<ApplicationSettings>();
         FysServerSettings = await ResetSettingInternal<FysServerSettings>();
+        CustomServerSettings = await ResetSettingInternal<CustomServerSettings>();
         await dialogManager.ShowMessageDialog("选项已被重置！");
     }
 

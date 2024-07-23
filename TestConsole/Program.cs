@@ -79,5 +79,3 @@ while (true)
         await File.AppendAllTextAsync("F:\\output.txt", "\n");
     }
 }
-
-Console.ReadLine();

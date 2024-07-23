@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:DpMapSubscribeTool.ViewModels.Dialogs.SqueezeJoinSetup"
              mc:Ignorable="d" Width="400"
+             x:DataType="vm:SqueezeJoinSetupDialogViewModel"
              x:Class="DpMapSubscribeTool.Views.Dialogs.SqueezeJoinSetup.SqueezeJoinSetupDialogView">
     <Design.DataContext>
         <vm:SqueezeJoinSetupDialogViewModel />

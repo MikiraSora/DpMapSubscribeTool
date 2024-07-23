@@ -5,6 +5,7 @@
              xmlns:vm="clr-namespace:DpMapSubscribeTool.ViewModels.Pages.Setting"
              xmlns:models="clr-namespace:DpMapSubscribeTool.Models"
              mc:Ignorable="d" d:DesignWidth="800"
+             x:DataType="vm:SettingPageViewModel"
              x:Class="DpMapSubscribeTool.Views.Pages.Setting.SettingPageView">
     <Design.DataContext>
         <vm:SettingPageViewModel />
@@ -34,61 +35,98 @@
                             </StackPanel>
                         </Grid>
                         <Border Height="2" Classes="ContentContainer" Margin="0,5" />
-                        <!--
-                    <DataBox ItemsSource="{Binding ApplicationSettings.UserMapSubscribes}"
-                             CanUserResizeColumns="True"
-                             Padding="5"
-                             GridLinesVisibility="All">
-                        <DataBox.Columns>
-                            <DataBoxCheckBoxColumn x:DataType="models:MapSubscribe" Header="是否启用"
-                                                   IsChecked="{Binding Enable}"
-                                                   Width="Auto" />
-                            <DataBoxEntryColumn x:DataType="models:MapSubscribe" Header="过滤名称" Text="{Binding Name}"
-                                                Width="150" />
-                            <DataBoxItemsColumn x:DataType="models:MapSubscribe" Header="过滤类型"
-                                                SelectedItem="{Binding MatchRule}"
-                                                Items="{Binding #host.((vm:SettingPageViewModel)DataContext).MapSubscribeRuleEnums,Mode=OneTime}"
-                                                Width="Auto" />
-                            <DataBoxEntryColumn x:DataType="models:MapSubscribe" Header="过滤内容"
-                                                Text="{Binding MatchContent}"
-                                                Width="*" />
-                        </DataBox.Columns>
-                    </DataBox>
-                    -->
-                        <DataGrid VerticalScrollBarVisibility="Disabled" Margin="5"
-                                  AutoGenerateColumns="False"
-                                  ItemsSource="{Binding ApplicationSettings.UserMapSubscribes}">
-                            <DataGrid.Columns>
-                                <DataGridCheckBoxColumn Header="是否启用" Binding="{Binding Enable}" />
-                                <DataGridTextColumn Header="过滤名称" Binding="{Binding Name}" />
-                                <DataGridTemplateColumn Header="过滤类型">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <ComboBox Margin="5" SelectedItem="{Binding MatchRule}"
-                                                      ItemsSource="{Binding #host.((vm:SettingPageViewModel)DataContext).MapSubscribeRuleEnums,Mode=OneTime}" />
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                                <DataGridTextColumn MinWidth="100" Header="过滤内容" Binding="{Binding MatchContent}" />
-                            </DataGrid.Columns>
-                            <DataGrid.Styles>
-                                <Style Selector="DataGridCell Rectangle">
-                                    <Setter Property="IsVisible" Value="False" />
+
+                        <DataBox ItemsSource="{Binding ApplicationSettings.UserMapSubscribes}"
+                                 CanUserResizeColumns="True"
+                                 Padding="5"
+                                 GridLinesVisibility="All">
+                            <DataBox.Columns>
+                                <DataBoxTemplateColumn Header="是否启用" Width="75">
+                                    <DataTemplate x:DataType="models:MapSubscribe">
+                                        <CheckBox HorizontalAlignment="Center" IsChecked="{Binding Enable}" />
+                                    </DataTemplate>
+                                </DataBoxTemplateColumn>
+                                <DataBoxEntryColumn x:DataType="models:MapSubscribe" Header="过滤名称"
+                                                    Text="{Binding Name}"
+                                                    Width="150" />
+                                <DataBoxItemsColumn x:DataType="models:MapSubscribe" Header="过滤类型"
+                                                    SelectedItem="{Binding MatchRule}"
+                                                    Items="{Binding #host.((vm:SettingPageViewModel)DataContext).MapSubscribeRuleEnums,Mode=OneTime}"
+                                                    Width="Auto" />
+                                <DataBoxEntryColumn x:DataType="models:MapSubscribe" Header="过滤内容"
+                                                    Text="{Binding MatchContent}"
+                                                    Width="*" />
+                                <DataBoxTemplateColumn>
+                                    <DataTemplate x:DataType="models:MapSubscribe">
+                                        <Button
+                                            CommandParameter="{Binding .}"
+                                            Command="{Binding #host.((vm:SettingPageViewModel)DataContext).DeleteMapSubscribeCommand}"
+                                            Content="删除" />
+                                    </DataTemplate>
+                                </DataBoxTemplateColumn>
+                            </DataBox.Columns>
+                            <DataBox.Styles>
+                                <Style Selector="DataBoxRow TextBox">
+                                    <Setter Property="BorderBrush" Value="Transparent" />
+                                    <Setter Property="Background" Value="Transparent" />
                                 </Style>
-                                <Style Selector="DataGridRow">
-                                    <Setter Property="ContextMenu">
-                                        <ContextMenu>
-                                            <MenuItem x:DataType="models:MapSubscribe"
-                                                      Command="{Binding #host.((vm:SettingPageViewModel)DataContext).DeleteMapSubscribeCommand}"
-                                                      CommandParameter="{Binding .}"
-                                                      Header="删除" />
-                                        </ContextMenu>
-                                    </Setter>
+                                <Style Selector="DataBoxRow CheckBox">
+                                    <Setter Property="HorizontalAlignment" Value="Center" />
                                 </Style>
-                            </DataGrid.Styles>
-                        </DataGrid>
+                            </DataBox.Styles>
+                        </DataBox>
                     </StackPanel>
                 </Border>
+
+                <Border Classes="ContentContainer" Margin="10">
+                    <StackPanel>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label VerticalAlignment="Center" FontWeight="Bold" FontSize="20">手动添加的服务器列表</Label>
+                            <StackPanel Orientation="Horizontal" Grid.Column="1" Margin="5" VerticalAlignment="Center">
+                                <Button Command="{Binding CreateNewCustomServerInfoCommand}">添加新的服务器</Button>
+                            </StackPanel>
+                        </Grid>
+                        <Border Height="2" Classes="ContentContainer" Margin="0,5" />
+
+                        <DataBox ItemsSource="{Binding CustomServerSettings.CustomServerInfos}"
+                                 CanUserResizeColumns="True"
+                                 Padding="5"
+                                 GridLinesVisibility="All">
+                            <DataBox.Columns>
+                                <DataBoxEntryColumn x:DataType="models:ServerInfo" Header="名称"
+                                                    Text="{Binding Name}"
+                                                    Width="250" />
+                                <DataBoxEntryColumn x:DataType="models:ServerInfo" Header="社区名"
+                                                    Text="{Binding ServerGroupDisplay}"
+                                                    Width="250" />
+                                <DataBoxEntryColumn x:DataType="models:ServerInfo" Header="服务器端口"
+                                                    Text="{Binding Port}"
+                                                    Width="100" />
+                                <DataBoxEntryColumn x:DataType="models:ServerInfo" Header="服务器地址"
+                                                    Text="{Binding Host}"
+                                                    Width="*" />
+                                <DataBoxTemplateColumn>
+                                    <DataTemplate x:DataType="models:ServerInfo">
+                                        <Button
+                                            CommandParameter="{Binding .}"
+                                            Command="{Binding #host.((vm:SettingPageViewModel)DataContext).DeleteCustomServerInfoCommand}"
+                                            Content="删除" />
+                                    </DataTemplate>
+                                </DataBoxTemplateColumn>
+                            </DataBox.Columns>
+                            <DataBox.Styles>
+                                <Style Selector="DataBoxRow TextBox">
+                                    <Setter Property="BorderBrush" Value="Transparent" />
+                                    <Setter Property="Background" Value="Transparent" />
+                                </Style>
+                                <Style Selector="DataBoxRow CheckBox">
+                                    <Setter Property="HorizontalAlignment" Value="Center" />
+                                </Style>
+                            </DataBox.Styles>
+                        </DataBox>
+                    </StackPanel>
+                </Border>
+
                 <Border Classes="ContentContainer" Margin="10">
                     <StackPanel>
                         <Grid ColumnDefinitions="*,Auto">

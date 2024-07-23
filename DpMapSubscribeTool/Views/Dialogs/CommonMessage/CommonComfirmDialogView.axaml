@@ -4,11 +4,12 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:commonMessage="clr-namespace:DpMapSubscribeTool.ViewModels.Dialogs.CommonMessage"
              mc:Ignorable="d" Width="400"
+             x:DataType="commonMessage:CommonComfirmDialogViewModel"
              x:Class="DpMapSubscribeTool.Views.Dialogs.CommonMessage.CommonComfirmDialogView">
     <Design.DataContext>
         <commonMessage:CommonComfirmDialogViewModel />
     </Design.DataContext>
-    <StackPanel>
+    <StackPanel >
         <TextBlock Margin="10" TextWrapping="WrapWithOverflow" Text="{Binding Content}" />
         <Grid ColumnDefinitions="*,*">
             <Button Classes="DialogButton" Content="{Binding YesButtonContent}" Command="{Binding YesCommand}" />

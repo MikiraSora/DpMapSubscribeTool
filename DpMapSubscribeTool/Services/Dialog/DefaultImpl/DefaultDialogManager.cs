@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Avalonia.Controls;
+using Avalonia.Threading;
 using DpMapSubscribeTool.Utils;
 using DpMapSubscribeTool.Utils.Injections;
 using DpMapSubscribeTool.ViewModels.Dialogs;
@@ -44,12 +45,15 @@ public class DefaultDialogManager : IDialogManager
         return vm.ComfirmResult;
     }
 
-    private async Task<T> ShowDialog<T>(T viewModel) where T : DialogViewModelBase
+    private Task<T> ShowDialog<T>(T viewModel) where T : DialogViewModelBase
     {
-        logger.LogInformationEx($"dialog {viewModel.DialogIdentifier} started.");
-        var view = new TemplateDialogView(viewModel);
-        await view.ShowAsync();
-        logger.LogInformationEx($"dialog {viewModel.DialogIdentifier} finished");
-        return viewModel;
+        return Dispatcher.UIThread.InvokeAsync(async () =>
+        {
+            logger.LogInformationEx($"dialog {viewModel.DialogIdentifier} started.");
+            var view = new TemplateDialogView(viewModel);
+            await view.ShowAsync();
+            logger.LogInformationEx($"dialog {viewModel.DialogIdentifier} finished");
+            return viewModel;
+        });
     }
 }

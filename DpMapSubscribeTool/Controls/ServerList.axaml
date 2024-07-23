@@ -9,6 +9,72 @@
     <Design.DataContext>
         <controls:ServerList />
     </Design.DataContext>
+    <DataBox CanUserSortColumns="True" Name="hostDataGrid"
+             ItemsSource="{Binding Servers}" IsReadOnly="True" DoubleTapped="HostDataGrid_OnDoubleTapped">
+        <DataBox.Columns>
+            <DataBoxTextColumn SortMemberPath="Info.ServerGroupDisplay" Width="Auto" Header="社区"
+                               x:DataType="models:Server"
+                               Text="{Binding Info.ServerGroupDisplay}" />
+            <DataBoxTextColumn Width="Auto" Header="服务器名" x:DataType="models:Server"
+                               Text="{Binding Info.Name}" />
+            <DataBoxTemplateColumn SortMemberPath="Map" Width="Auto" Header="地图" x:DataType="models:Server">
+                <DataTemplate x:DataType="models:Server">
+                    <TextBlock VerticalAlignment="Center" Text="{Binding Map}"
+                               Foreground="{Binding Map,Mode=OneWay,Converter={StaticResource BrushMapTypeConverter}}" />
+                </DataTemplate>
+            </DataBoxTemplateColumn>
+            <DataBoxTextColumn Width="Auto" Header="地图译名" x:DataType="models:Server"
+                               Text="{Binding Map,Mode=OneWay,Converter={StaticResource GetMapTranslationNameConverter}}" />
+            <DataBoxTextColumn Width="75" x:DataType="models:Server" Header="关卡状态" Text="{Binding State}" />
+            <DataBoxTemplateColumn Width="100" Header="人数">
+                <DataTemplate x:DataType="models:Server">
+                    <Label VerticalAlignment="Center">
+                        <Label.Content>
+                            <MultiBinding
+                                Converter="{StaticResource DisplayPlayerCountConverter }">
+                                <Binding Path="CurrentPlayerCount" />
+                                <Binding Path="MaxPlayerCount" />
+                            </MultiBinding>
+                        </Label.Content>
+                        <Label.Foreground>
+                            <MultiBinding
+                                Converter="{StaticResource BrushPlayerCountConverter }">
+                                <Binding Path="CurrentPlayerCount" />
+                                <Binding Path="MaxPlayerCount" />
+                            </MultiBinding>
+                        </Label.Foreground>
+                    </Label>
+                </DataTemplate>
+            </DataBoxTemplateColumn>
+            <DataBoxTextColumn Width="75" x:DataType="models:Server" Header="延迟" Text="{Binding Delay}" />
+            <DataBoxTextColumn Width="*" x:DataType="models:Server" Header="服务器地址"
+                               Text="{Binding Info.EndPointDescription}" />
+        </DataBox.Columns>
+        <DataBox.Styles>
+            <Style Selector="DataBoxRowsPresenter">
+                <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+            </Style>
+            <Style Selector="DataBoxRow">
+                <Setter Property="ContextMenu">
+                    <ContextMenu>
+                        <MenuItem x:DataType="models:Server"
+                                  Command="{Binding #hostDataGrid.((controls:ServerList)DataContext).ServerDoubleTappedCommand}"
+                                  CommandParameter="{Binding .}"
+                                  Header="查看服务器" />
+                        <MenuItem x:DataType="models:Server"
+                                  Command="{Binding #hostDataGrid.((controls:ServerList)DataContext).JoinServerCommand}"
+                                  CommandParameter="{Binding .}"
+                                  Header="加入服务器" />
+                        <MenuItem x:DataType="models:Server"
+                                  Command="{Binding #hostDataGrid.((controls:ServerList)DataContext).SqueezeJoinServerCommand}"
+                                  CommandParameter="{Binding .}"
+                                  Header="自动挤服" />
+                    </ContextMenu>
+                </Setter>
+            </Style>
+        </DataBox.Styles>
+    </DataBox>
+    <!--
     <DataGrid
         Name="hostDataGrid"
         IsReadOnly="True"
@@ -16,6 +82,7 @@
         VerticalScrollBarVisibility="Disabled"
         DoubleTapped="HostDataGrid_OnDoubleTapped"
         AutoGenerateColumns="False"
+        x:DataType="controls:ServerList"
         ItemsSource="{Binding Servers}">
         <DataGrid.Columns>
             <DataGridTextColumn IsReadOnly="True" Header="社区"
@@ -81,5 +148,5 @@
                 </Setter>
             </Style>
         </DataGrid.Styles>
-    </DataGrid>
+    </DataGrid>-->
 </UserControl>

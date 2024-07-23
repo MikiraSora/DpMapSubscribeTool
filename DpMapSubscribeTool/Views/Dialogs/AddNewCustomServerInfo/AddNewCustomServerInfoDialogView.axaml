@@ -1,0 +1,35 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:DpMapSubscribeTool.ViewModels.Dialogs.AddNewCustomServerInfo"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="DpMapSubscribeTool.Views.Dialogs.AddNewCustomServerInfo.AddNewCustomServerInfoDialogView">
+    <Design.DataContext>
+        <vm:AddNewCustomServerInfoDialogViewModel />
+    </Design.DataContext>
+    <StackPanel>
+        <StackPanel Margin="0,5" Orientation="Horizontal">
+            <Label Content="服务器名：" VerticalAlignment="Center" />
+            <TextBox Margin="5,0" MinWidth="150" Text="{Binding ServerInfo.Name}" />
+        </StackPanel>
+        <StackPanel Margin="0,5,0,0" Orientation="Horizontal">
+            <Label Content="游戏社区：" VerticalAlignment="Center" />
+            <TextBox Margin="5,0" MinWidth="100" Text="{Binding ServerInfo.ServerGroupDisplay}" />
+        </StackPanel>
+        <StackPanel Margin="0,5" Orientation="Horizontal">
+            <Label Content="服务器地址：" VerticalAlignment="Center" />
+            <TextBox Margin="5,0" MinWidth="250" Text="{Binding ServerInfo.Host}" />
+        </StackPanel>
+        <StackPanel Margin="0,5,0,0" Orientation="Horizontal">
+            <Label Content="游戏端口：" VerticalAlignment="Center" />
+            <TextBox Margin="5,0" MinWidth="100" Text="{Binding ServerInfo.Port}" />
+        </StackPanel>
+
+        <Grid ColumnDefinitions="*,*">
+            <Button Content="添加" Command="{Binding ComfirmCommand}"
+                    Classes="DialogButton" />
+            <Button Grid.Column="1" Content="取消" Classes="DialogButton" Command="{Binding CancelCommand}" />
+        </Grid>
+    </StackPanel>
+</UserControl>

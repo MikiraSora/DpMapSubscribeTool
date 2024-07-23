@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:hello="clr-namespace:DpMapSubscribeTool.ViewModels.Dialogs.Hello"
              mc:Ignorable="d"
+             x:DataType="hello:HelloDialogViewModel"
              x:Class="DpMapSubscribeTool.Views.Dialogs.Hello.HelloDialogView">
     <Design.DataContext>
         <hello:HelloDialogViewModel />

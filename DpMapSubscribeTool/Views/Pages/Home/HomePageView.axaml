@@ -2,7 +2,45 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:home="clr-namespace:DpMapSubscribeTool.ViewModels.Pages.Home"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="DpMapSubscribeTool.Views.Pages.Home.HomePageView">
-  Welcome to Avalonia!
+    <Design.DataContext>
+        <home:HomePageViewModel />
+    </Design.DataContext>
+    <StackPanel Margin="10">
+        <Border Classes="ContentContainer">
+            <StackPanel>
+                <Label Content="DpMapSubscribeTool ~ ZE蛆王小助手" FontSize="25" />
+                <Rectangle Height="3" Fill="{StaticResource SystemControlBackgroundBaseLowBrush}" />
+                <TextBlock Margin="5" TextWrapping="WrapWithOverflow"
+                           Text="本应用属于第三方实现的CS2社区服务器助手。可以提供针对社区服务器相关的辅助服务，比如订阅地图状态，自动加入服务器等。" />
+                <TextBlock Margin="5" FontWeight="Bold" Text="本项目无任何利益相关" />
+            </StackPanel>
+        </Border>
+        <Grid ColumnDefinitions="*,Auto">
+            <Border Classes="ContentContainer" Margin="5,10,0,0" Grid.Column="1">
+                <StackPanel>
+                    <Label FontWeight="Bold" FontSize="18" Content="Program Build Infomation" />
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="*,*,*,*,*">
+                        <!---->
+                        <Label HorizontalAlignment="Right" Content="CommitHash:" Grid.Row="0" Grid.Column="0" />
+                        <Label FontWeight="Bold" Content="{Binding ProgramCommitIdShort }" Grid.Row="0" Grid.Column="1" />
+                        <!---->
+                        <Label HorizontalAlignment="Right" Content="CommitTime:" Grid.Row="1" Grid.Column="0" />
+                        <Label FontWeight="Bold" Content="{Binding ProgramCommitDate }" Grid.Row="1" Grid.Column="1" />
+                        <!---->
+                        <Label HorizontalAlignment="Right" Content="BuildTime:" Grid.Row="2" Grid.Column="0" />
+                        <Label FontWeight="Bold" Content="{Binding ProgramBuildTime }" Grid.Row="2" Grid.Column="1" />
+                        <!---->
+                        <Label HorizontalAlignment="Right" Content="BuildConfiguration:" Grid.Row="3" Grid.Column="0" />
+                        <Label FontWeight="Bold" Content="{Binding ProgramBuildConfiguration }" Grid.Row="3" Grid.Column="1" />
+                        <!---->
+                        <Label HorizontalAlignment="Right" Content="BuildVersion:" Grid.Row="4" Grid.Column="0" />
+                        <Label FontWeight="Bold" Content="{Binding AssemblyVersion }" Grid.Row="4" Grid.Column="1" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </StackPanel>
 </UserControl>

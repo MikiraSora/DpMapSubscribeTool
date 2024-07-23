@@ -9,14 +9,14 @@ public partial class MapSubscribe : ObservableObject
     private Regex cachedRuleRegex;
 
     [ObservableProperty]
+    private bool enable;
+
+    [ObservableProperty]
     private string matchContent;
 
     [ObservableProperty]
     private MapSubscribeRule matchRule;
 
-    [ObservableProperty]
-    private bool enable;
-    
     [ObservableProperty]
     private string name;
 
@@ -29,7 +29,10 @@ public partial class MapSubscribe : ObservableObject
     {
         if (!Enable)
             return false;
-        
+
+        if (string.IsNullOrWhiteSpace(server.Map))
+            return false;
+
         switch (MatchRule)
         {
             case MapSubscribeRule.CustomRegex:

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using DpMapSubscribeTool.Models;
@@ -9,53 +8,53 @@ using DpMapSubscribeTool.Services.Dialog;
 using DpMapSubscribeTool.Services.Map;
 using DpMapSubscribeTool.Services.Networks;
 using DpMapSubscribeTool.Services.Persistences;
-using DpMapSubscribeTool.Services.Servers.DefaultImpl.ServiceGroupImpl.EXG.Bases;
+using DpMapSubscribeTool.Services.SteamAPI;
 using DpMapSubscribeTool.Utils;
 using DpMapSubscribeTool.Utils.Injections;
+using DpMapSubscribeTool.Utils.MethodExtensions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace DpMapSubscribeTool.Services.Servers.DefaultImpl.ServiceGroupImpl.EXG;
+namespace DpMapSubscribeTool.Services.Servers.DefaultImpl.ServiceGroupImpl.Custom;
 
 [RegisterInjectable(typeof(IServerActionExecutor), ServiceLifetime.Singleton)]
 [RegisterInjectable(typeof(IServerInfoSearcher), ServiceLifetime.Singleton)]
 [RegisterInjectable(typeof(IServerSqueezeJoinRunner), ServiceLifetime.Singleton)]
 [RegisterInjectable(typeof(IServerStateUpdater), ServiceLifetime.Singleton)]
-[RegisterInjectable(typeof(IEXGServerServiceBase), ServiceLifetime.Singleton)]
-public class EXGServerManager : IEXGServerServiceBase, IServerInfoSearcher, IServerStateUpdater,
+[RegisterInjectable(typeof(ICustomServerServiceBase), ServiceLifetime.Singleton)]
+public class CustomServerManager : ICustomServerServiceBase, IServerInfoSearcher, IServerStateUpdater,
     IServerSqueezeJoinRunner,
     IServerActionExecutor
 {
     private readonly CommonJoinServer commonJoinServer;
     private readonly IDialogManager dialogManager;
     private readonly IApplicationHttpFactory httpFactory;
-    private readonly ILogger<EXGServerManager> logger;
+    private readonly ILogger<CustomServerManager> logger;
     private readonly IMapManager mapManager;
-
     private readonly IPersistence persistence;
+    private readonly ISteamAPIManager steamApiManager;
 
     private CancellationTokenSource cancellationTokenSource;
-    private List<EXGServerStatus> currentServerStatusList;
-    private Dictionary<string, EXGServerStatus> currentServerStatusMap;
+    private QuestServerResult[] currentServerStatusList;
+    private Dictionary<string, QuestServerResult> currentServerStatusMap;
+    private CustomServerSettings customServerSettings;
 
     private Task dataReadyTask;
 
-    public EXGServerManager(IApplicationHttpFactory httpFactory, ILogger<EXGServerManager> logger,
-        CommonJoinServer commonJoinServer,
+    public CustomServerManager(IApplicationHttpFactory httpFactory, ILogger<CustomServerManager> logger,
+        CommonJoinServer commonJoinServer, ISteamAPIManager steamApiManager,
         IMapManager mapManager, IDialogManager dialogManager, IPersistence persistence)
     {
         this.httpFactory = httpFactory;
         this.logger = logger;
         this.commonJoinServer = commonJoinServer;
+        this.steamApiManager = steamApiManager;
         this.mapManager = mapManager;
         this.dialogManager = dialogManager;
         this.persistence = persistence;
 
         Initialize();
     }
-
-    public string ServerGroup => "EXG";
-    public string ServerGroupDescription => "EXG";
 
     public Task Join(ServerInfo serverInfo)
     {
@@ -65,16 +64,13 @@ public class EXGServerManager : IEXGServerServiceBase, IServerInfoSearcher, ISer
     public async Task<IEnumerable<ServerInfo>> GetAllAvaliableServerInfo()
     {
         await CheckOrWaitDataReady();
-
-        return currentServerStatusList.Select(x => new ServerInfo
-        {
-            ServerGroupDisplay = ServerGroupDescription,
-            ServerGroup = ServerGroup,
-            Name = x.Server.DisplayName + " - " + x.Server.DisplayNameCN,
-            Host = x.Server.Ip,
-            Port = x.Server.Port
-        });
+        return customServerSettings.CustomServerInfos;
     }
+
+    public string ServerGroup => "Custom";
+
+    //unused.
+    public string ServerGroupDescription => "自定义";
 
     public Task<bool> CheckSqueezeJoinServer(ServerInfo serverInfo, SqueezeJoinServerOption option,
         CancellationToken cancellationToken)
@@ -89,7 +85,7 @@ public class EXGServerManager : IEXGServerServiceBase, IServerInfoSearcher, ISer
 
     public async Task<Server> QueryServer(ServerInfo info)
     {
-        var exgWrappedServer = new EXGWrappedServer
+        var exgWrappedServer = new CustomWrappedServer
         {
             Info = info
         };
@@ -103,28 +99,31 @@ public class EXGServerManager : IEXGServerServiceBase, IServerInfoSearcher, ISer
     {
         await CheckOrWaitDataReady();
 
-        if (server is not EXGWrappedServer exgWrappedServer)
+        if (server is not CustomWrappedServer customWrappedServer)
         {
             logger.LogErrorEx(
-                $"Can't update server because param is not EXGWrappedServer object:({server.GetType().FullName})");
+                $"Can't update server because param is not CustomWrappedServer object:({server.GetType().FullName})");
             return;
         }
 
-        if (currentServerStatusMap.TryGetValue(exgWrappedServer.Info.EndPointDescription, out var exgServerStatus))
+        if (currentServerStatusMap.TryGetValue(customWrappedServer.Info.EndPointDescription, out var customServer))
         {
-            exgWrappedServer.Map = exgServerStatus.Status.Map ?? "<Unknown Map>";
-            exgWrappedServer.State = string.Empty;
-            exgWrappedServer.CurrentPlayerCount = exgServerStatus.Status.CurrentPlayers;
-            exgWrappedServer.MaxPlayerCount = exgServerStatus.Status.MaxPlayers;
+            customWrappedServer.Map = customServer.Map ?? "<Unknown Map>";
+            customWrappedServer.State = string.Empty;
+            customWrappedServer.CurrentPlayerCount = customServer.CurrentPlayerCount;
+            customWrappedServer.MaxPlayerCount = customServer.MaxPlayerCount;
+            customWrappedServer.Delay = customServer.Delay;
         }
     }
 
-    private void Initialize()
+    private async void Initialize()
     {
 #if DEBUG
         if (DesignModeHelper.IsDesignMode)
             return; //NOT SUPPORT IN DESIGN MODE
 #endif
+
+        customServerSettings = await persistence.Load<CustomServerSettings>();
     }
 
     private Task CheckOrWaitDataReady()
@@ -152,36 +151,37 @@ public class EXGServerManager : IEXGServerServiceBase, IServerInfoSearcher, ISer
         var timeInterval = TimeSpan.FromSeconds(10);
 
         while (!cancellationToken.IsCancellationRequested)
+        {
             try
             {
-                var resp = await httpFactory.SendAsync(
-                    "https://list.darkrp.cn:9000/ServerList/CurrentStatus", default, cancellationToken);
+                var cancelSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-                var str = await resp.Content.ReadAsStreamAsync(cancellationToken);
-                var list = new List<EXGServerStatus>();
-                await foreach (var status in JsonSerializer.DeserializeAsyncEnumerable<EXGServerStatus>(str,
-                                   JsonSerializerOptions.Default, cancellationToken))
-                    list.Add(status);
-                await UpdateServerStatus(list);
+                Task.Delay(TimeSpan.FromSeconds(1), cancellationToken)
+                    .ContinueWith(t => cancelSource.Cancel(), cancellationToken).NoWait();
 
-                if (!taskCompletionSource.Task.IsCompleted)
-                    taskCompletionSource.SetResult();
+                var tasks = customServerSettings.CustomServerInfos.Select(serverInfo =>
+                    steamApiManager.QueryServer(serverInfo.Host, serverInfo.Port, cancelSource.Token)).ToArray();
 
-                await Task.Delay(timeInterval, cancellationToken);
+                var queryResult = await Task.WhenAll(tasks);
+                UpdateQueryServers(queryResult.OfType<QuestServerResult>().ToArray());
             }
             catch (Exception e)
             {
-                logger.LogErrorEx(e, "update server status failed.");
+                logger.LogErrorEx(e, "update data failed.");
             }
+
+            if (!taskCompletionSource.Task.IsCompleted)
+                taskCompletionSource.SetResult();
+            await Task.Delay(timeInterval, cancellationToken);
+        }
 
         logger.LogInformationEx("thread end.");
     }
 
-    private Task UpdateServerStatus(List<EXGServerStatus> serverStatusList)
+    private void UpdateQueryServers(QuestServerResult[] queryResult)
     {
-        currentServerStatusList = serverStatusList;
-        currentServerStatusMap = serverStatusList.ToDictionary(x => $"{x.Server.Ip}:{x.Server.Port}", x => x);
-        logger.LogDebugEx("server status updated.");
-        return Task.CompletedTask;
+        currentServerStatusList = queryResult;
+        currentServerStatusMap = queryResult.ToDictionary(x => $"{x.Host}:{x.Port}", x => x);
+        logger.LogDebugEx("servers updated.");
     }
 }

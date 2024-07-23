@@ -6,6 +6,7 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using DpMapSubscribeTool.Models;
@@ -89,11 +90,14 @@ public class UBServerManager : IUBServerServiceBase, IServerInfoSearcher, IServe
     {
         await CheckOrWaitDataReady();
 
+        var regex = new Regex(@"Q群\s\d+");
+
         return servers.Values.Select(x => new ServerInfo
         {
             ServerGroupDisplay = ServerGroupDescription,
             ServerGroup = ServerGroup,
-            Name = x.Name,
+            //simply names
+            Name = regex.Replace(x.Name, string.Empty, 1).Trim(),
             Host = x.Host,
             Port = x.Port
         });
@@ -136,8 +140,7 @@ public class UBServerManager : IUBServerServiceBase, IServerInfoSearcher, IServe
         if (endPointServerMap.TryGetValue(ubWrappedServer.Info.EndPointDescription, out var ubServer))
         {
             ubWrappedServer.Map = ubServer.CurrentMap?.Name ?? "<Unknown Map>";
-            if (ubServer.Level is UBLevel level)
-                ubWrappedServer.State = level.Num == 0 ? string.Empty : $"{ubServer.NumRounds}/{ubServer.MaxRounds}";
+            ubWrappedServer.State = $"{ubServer.NumRounds}/{ubServer.MaxRounds}";
             ubWrappedServer.CurrentPlayerCount = ubServer.Clients.Count;
             ubWrappedServer.MaxPlayerCount = ubServer.MaxPlayers;
         }
@@ -209,10 +212,10 @@ public class UBServerManager : IUBServerServiceBase, IServerInfoSearcher, IServe
             }
             catch (Exception e)
             {
-                logger.LogErrorEx(e, "deserialize/update event-stream data failed.");
+                logger.LogErrorEx(e, "wss recv message failed.");
             }
 
-        logger.LogInformationEx("event-stream thread end.");
+        logger.LogInformationEx("thread end.");
     }
 
 

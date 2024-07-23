@@ -1,40 +1,61 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
-    <LangVersion>latest</LangVersion>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <LangVersion>latest</LangVersion>
+        <!--
+        <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+        -->
+    </PropertyGroup>
 
-  
-  <ItemGroup>
-    <AvaloniaResource Include="Assets\**" />
-  </ItemGroup>
+    <PropertyGroup>
+        <BuildTime>$(MSBuildThisFileFullPath)$(MSBuildThisFileModifiedTime)</BuildTime>
+        <BuildTimeUtc>$([System.DateTime]::Now.ToString("yyyy/MM/dd HH:mm:ss.fff"))</BuildTimeUtc>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Avalonia" Version="$(AvaloniaVersion)" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="$(AvaloniaVersion)" />
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="$(AvaloniaVersion)" />
-    <PackageReference Include="Avalonia.Xaml.Behaviors" Version="11.0.10.9" />
-    <PackageReference Include="AvaloniaDialogs" Version="3.5.6" />
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+    <Target Name="GenerateBuildTimeClass" BeforeTargets="BeforeBuild">
+        <WriteLinesToFile
+                File="$(IntermediateOutputPath)BuildTime.cs"
+                Lines="namespace DpMapSubscribeTool { public static class BuildTime { public static string Value = &quot;$(BuildTimeUtc)&quot;%3B } }"
+                Overwrite="true"/>
+        <ItemGroup>
+            <Compile Include="$(IntermediateOutputPath)BuildTime.cs"/>
+        </ItemGroup>
+    </Target>
 
-    <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="$(AvaloniaVersion)" />
-    <PackageReference Include="DataBox" Version="11.0.0.2" />
-    <PackageReference Include="DialogHost.Avalonia" Version="0.7.9" />
-    <PackageReference Include="FluentAvalonia.ProgressRing" Version="1.69.2" />
-    <PackageReference Include="FluentIcons.Avalonia" Version="1.1.249" />
-    <PackageReference Include="FluentIcons.Common" Version="1.1.249" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
-    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
-    <PackageReference Include="SteamQuery.NET" Version="1.1.2" />
-  </ItemGroup>
+    <ItemGroup>
+        <AvaloniaResource Include="Assets\**"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <Compile Update="Views\Dialogs\CommonMessage\CommonComfirmDialogView.axaml.cs">
-      <DependentUpon>CommonComfirmDialogView.axaml</DependentUpon>
-      <SubType>Code</SubType>
-    </Compile>
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Avalonia" Version="$(AvaloniaVersion)"/>
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="$(AvaloniaVersion)"/>
+        <PackageReference Include="Avalonia.Fonts.Inter" Version="$(AvaloniaVersion)"/>
+        <PackageReference Include="Avalonia.Xaml.Behaviors" Version="11.1.0"/>
+        <PackageReference Include="AvaloniaDialogs" Version="3.5.6"/>
+        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2"/>
+
+        <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
+        <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="$(AvaloniaVersion)"/>
+        <PackageReference Include="DataBox" Version="11.1.0"/>
+        <PackageReference Include="DialogHost.Avalonia" Version="0.7.9"/>
+        <PackageReference Include="FluentAvalonia.ProgressRing" Version="1.69.2"/>
+        <PackageReference Include="FluentIcons.Avalonia" Version="1.1.249"/>
+        <PackageReference Include="FluentIcons.Common" Version="1.1.249"/>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0"/>
+        <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0"/>
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0"/>
+        <PackageReference Include="Nerdbank.GitVersioning" Version="3.6.139">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Serilog.Sinks.File" Version="6.0.0"/>
+        <PackageReference Include="SteamQuery.NET" Version="1.1.2"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Update="Views\Dialogs\CommonMessage\CommonComfirmDialogView.axaml.cs">
+            <DependentUpon>CommonComfirmDialogView.axaml</DependentUpon>
+            <SubType>Code</SubType>
+        </Compile>
+    </ItemGroup>
 </Project>

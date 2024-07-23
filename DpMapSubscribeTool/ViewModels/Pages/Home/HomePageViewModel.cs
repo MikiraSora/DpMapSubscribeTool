@@ -1,12 +1,25 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
 
-namespace DpMapSubscribeTool.ViewModels.Pages.Home
+namespace DpMapSubscribeTool.ViewModels.Pages.Home;
+
+public class HomePageViewModel : PageViewModelBase
 {
-    internal class HomePageViewModel : PageViewModelBase
+    public override string Title => "主页";
+
+    public string ProgramCommitId => ThisAssembly.GitCommitId;
+    public string ProgramCommitIdShort => ProgramCommitId[..7];
+    public string AssemblyVersion => ThisAssembly.AssemblyVersion;
+    public DateTime ProgramCommitDate => ThisAssembly.GitCommitDate;
+    public string ProgramBuildConfiguration => ThisAssembly.AssemblyConfiguration;
+
+    public string ProgramBuildTime
     {
-        public override string Title => "主页";
+        get
+        {
+            var type = typeof(HomePageViewModel).Assembly.GetType("DpMapSubscribeTool.BuildTime");
+            var prop = type?.GetField("Value")?.GetValue(null)
+                ?.ToString();
+            return prop;
+        }
     }
 }

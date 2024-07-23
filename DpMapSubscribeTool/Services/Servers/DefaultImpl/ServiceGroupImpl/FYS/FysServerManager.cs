@@ -122,18 +122,10 @@ public class FysServerManager : IFysServerServiceBase, IServerInfoSearcher, ISer
             .ToList();
     }
 
-    public async Task<bool> CheckSqueezeJoinServer(ServerInfo serverInfo, SqueezeJoinServerOption option,
+    public Task<bool> CheckSqueezeJoinServer(ServerInfo serverInfo, SqueezeJoinServerOption option,
         CancellationToken cancellationToken)
     {
-        /*
-        if (string.IsNullOrWhiteSpace(fysServerSettings.PlayerName))
-        {
-            logger.LogWarningEx("no fys playerName");
-            await dialogManager.ShowMessageDialog("Fys服务器挤服功能需要去本程序设置页面填写Fys服务器内自己的玩家名。");
-            return false;
-        }
-        */
-        return true;
+        return Task.FromResult(true);
     }
 
     public Task<bool> IsUserInServer(List<string> playerNameList, CancellationToken cancellationToken)
@@ -239,18 +231,21 @@ public class FysServerManager : IFysServerServiceBase, IServerInfoSearcher, ISer
                 logger.LogDebugEx("event-stream response reached.");
 
                 var jsonContent = await resp.Content.ReadAsStringAsync(cancellationToken);
-                var eventStreamData = JsonSerializer.Deserialize<EventStreamData>(jsonContent);
-
-                UpdateEventStreamData(eventStreamData);
-                //event-stream data is ready
-                if (!taskCompletionSource.Task.IsCompleted)
-                    taskCompletionSource.SetResult();
+                if (jsonContent.StartsWith("{"))
+                {
+                    var eventStreamData = JsonSerializer.Deserialize<EventStreamData>(jsonContent);
+                    UpdateEventStreamData(eventStreamData);
+                }
             }
             catch (Exception e)
             {
                 logger.LogErrorEx(e, "deserialize/update event-stream data failed.");
             }
 
+            //event-stream data is ready(?)
+            if (!taskCompletionSource.Task.IsCompleted)
+                taskCompletionSource.SetResult();
+            
             await Task.Delay(timeInterval, default);
         }
 

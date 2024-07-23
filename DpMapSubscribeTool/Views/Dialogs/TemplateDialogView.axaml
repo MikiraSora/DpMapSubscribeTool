@@ -2,12 +2,13 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:dialogs1="clr-namespace:DpMapSubscribeTool.ViewModels.Dialogs"
+             xmlns:dialogs="clr-namespace:DpMapSubscribeTool.Views.Dialogs"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             Background="Transparent"
+             x:DataType="dialogs:TemplateDialogView"
+             Background="Black"
              x:Class="DpMapSubscribeTool.Views.Dialogs.TemplateDialogView">
     <Design.DataContext>
-        <dialogs1:DialogViewModelBase />
+        <dialogs:TemplateDialogView />
     </Design.DataContext>
     <Border>
         <StackPanel>

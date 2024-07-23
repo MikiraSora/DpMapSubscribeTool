@@ -33,13 +33,13 @@ public class UBServer
     public string Name { get; set; }
 
     [JsonPropertyName("map")]
-    public UBMap CurrentMap { get; set; }
+    public UBMap CurrentMap { get; set; } = new();
 
     [JsonPropertyName("nextmap")]
-    public UBMap NextMap { get; set; }
+    public UBMap NextMap { get; set; } = new();
 
     [JsonPropertyName("level")]
-    public UBLevel Level { get; set; }
+    public UBLevel Level { get; set; } = new();
 
     [JsonPropertyName("timeleft")]
     public long TimeLeft { get; set; }
@@ -51,8 +51,8 @@ public class UBServer
     public int MaxRounds { get; set; }
 
     [JsonPropertyName("clients")]
-    public List<UBClient> Clients { get; set; }
+    public List<UBClient> Clients { get; set; } = new();
 
     [JsonPropertyName("nominate")]
-    public List<UBNominate> Nominate { get; set; }
+    public List<UBNominate> Nominate { get; set; } = new();
 }

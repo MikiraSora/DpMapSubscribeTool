@@ -74,7 +74,9 @@ public class ZEDServerManager : IZEDServerServiceBase, IServerInfoSearcher, ISer
             {
                 ServerGroupDisplay = ServerGroupDescription,
                 ServerGroup = ServerGroup,
-                Name = x.HostName,
+                //simply names
+                Name = x.HostName.Replace("多线 ZombiEden.cn", string.Empty, StringComparison.InvariantCultureIgnoreCase)
+                    .Trim(),
                 Host = split[0],
                 Port = int.Parse(split[1])
             };
@@ -127,7 +129,7 @@ public class ZEDServerManager : IZEDServerServiceBase, IServerInfoSearcher, ISer
     public string ServerGroup => "ZED";
     public string ServerGroupDescription => "僵尸乐园";
 
-    private async void Initialize()
+    private void Initialize()
     {
 #if DEBUG
         if (DesignModeHelper.IsDesignMode)
@@ -189,16 +191,17 @@ public class ZEDServerManager : IZEDServerServiceBase, IServerInfoSearcher, ISer
             }
             catch (Exception e)
             {
-                logger.LogErrorEx(e, "deserialize/update event-stream data failed.");
+                logger.LogErrorEx(e, "update data failed.");
             }
 
-        logger.LogInformationEx("event-stream thread end.");
+        logger.LogInformationEx("thread end.");
     }
 
     private Task UpdateServerStatus(List<ZEDServer> serverList)
     {
         currentServerStatusList = serverList;
         currentServerStatusMap = serverList.ToDictionary(x => x.Ip, x => x);
+        logger.LogDebugEx("server list updated.");
         return Task.CompletedTask;
     }
 }

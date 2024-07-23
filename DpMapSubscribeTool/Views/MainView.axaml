@@ -31,7 +31,7 @@
                             Height="32"
                             Margin="8 10"
                             Command="{Binding TriggerPaneCommand}">
-                        <ic:SymbolIcon Symbol="AppsList" FontSize="20" IsFilled="True" VerticalAlignment="Center" />
+                        <ic:SymbolIcon Symbol="AppsList" FontSize="20" IconVariant="Filled" VerticalAlignment="Center" />
                     </Button>
                     <ListBox Margin="5 0" Padding="0" ItemsSource="{Binding TopItems}"
                              SelectedItem="{Binding SelectedListItem}">

@@ -55,8 +55,6 @@ public partial class ServerList : UserControl
 
     private void HostDataGrid_OnDoubleTapped(object sender, TappedEventArgs e)
     {
-        if (hostDataGrid.SelectedItem == null || hostDataGrid.SelectedItems.Count > 1)
-            return;
         if (hostDataGrid.SelectedItem is not Server server)
             return;
         if (!(ServerDoubleTappedCommand?.CanExecute(server) ?? false))
