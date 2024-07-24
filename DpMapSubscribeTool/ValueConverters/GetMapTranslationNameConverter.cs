@@ -1,13 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
-using Avalonia.Data.Converters;
+using System.Linq;
 using DpMapSubscribeTool.Services.Map;
 using DpMapSubscribeTool.Utils.Injections;
 
 namespace DpMapSubscribeTool.ValueConverters;
 
-[RegisterInjectable(typeof(IInjectableValueConverter))]
-public class GetMapTranslationNameConverter : IInjectableValueConverter
+[RegisterInjectable(typeof(IInjectableMultiValueConverter))]
+public class GetMapTranslationNameConverter : IInjectableMultiValueConverter
 {
     private readonly IMapManager mapManager;
 
@@ -16,13 +17,11 @@ public class GetMapTranslationNameConverter : IInjectableValueConverter
         this.mapManager = mapManager;
     }
 
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    public object Convert(IList<object> values, Type targetType, object parameter, CultureInfo culture)
     {
-        return value is not string mapName ? string.Empty : mapManager.GetMapTranslationName(mapName);
-    }
-
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-    {
-        throw new NotImplementedException();
+        if (values.ElementAtOrDefault(0) is string serverGroup && values.ElementAtOrDefault(1) is string mapName &&
+            !string.IsNullOrWhiteSpace(mapName))
+            return mapManager.GetMapTranslationName(serverGroup, mapName);
+        return string.Empty;
     }
 }

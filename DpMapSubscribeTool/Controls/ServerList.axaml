@@ -23,8 +23,15 @@
                                Foreground="{Binding Map,Mode=OneWay,Converter={StaticResource BrushMapTypeConverter}}" />
                 </DataTemplate>
             </DataBoxTemplateColumn>
-            <DataBoxTextColumn Width="Auto" Header="地图译名" x:DataType="models:Server"
-                               Text="{Binding Map,Mode=OneWay,Converter={StaticResource GetMapTranslationNameConverter}}" />
+            <DataBoxTextColumn Width="Auto" Header="地图译名">
+                <DataBoxTextColumn.Text>
+                    <MultiBinding x:DataType="models:Server"
+                                  Converter="{StaticResource GetMapTranslationNameConverter}">
+                        <Binding Path="Info.ServerGroup" />
+                        <Binding Path="Map" />
+                    </MultiBinding>
+                </DataBoxTextColumn.Text>
+            </DataBoxTextColumn>
             <DataBoxTextColumn Width="75" x:DataType="models:Server" Header="关卡状态" Text="{Binding State}" />
             <DataBoxTemplateColumn Width="100" Header="人数">
                 <DataTemplate x:DataType="models:Server">

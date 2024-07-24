@@ -241,6 +241,7 @@ public class UBServerManager : IUBServerServiceBase, IServerInfoSearcher, IServe
         servers[server.Id] = server;
         endPointServerMap[$"{server.Host}:{server.Port}"] = server;
         logger.LogInformationEx($"init server id:{server.Id}, name:{server.Name}");
+        mapManager.CacheMapTranslationName(ServerGroup, server.CurrentMap.Name, server.CurrentMap.Label);
 
         return Task.CompletedTask;
     }

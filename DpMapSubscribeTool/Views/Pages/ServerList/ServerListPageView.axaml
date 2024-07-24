@@ -47,7 +47,8 @@
                             <StackPanel Orientation="Horizontal">
                                 <ic:SymbolIcon Symbol="Filter" FontSize="20"
                                                VerticalAlignment="Center" />
-                                <Label VerticalAlignment="Center">已条件过滤的服务器</Label>
+                                <Label VerticalAlignment="Center"
+                                       Content="{Binding ServerManager.FilterServers.Count,StringFormat=已条件过滤的服务器({0})}" />
                             </StackPanel>
                         </Expander.Header>
                         <Expander.Content>
@@ -65,7 +66,8 @@
                             <StackPanel Orientation="Horizontal">
                                 <ic:SymbolIcon Symbol="Heart" FontSize="20"
                                                VerticalAlignment="Center" />
-                                <Label VerticalAlignment="Center">符合订阅条件的服务器</Label>
+                                <Label VerticalAlignment="Center"
+                                       Content="{Binding ServerManager.SubscribeServers.Count,StringFormat=符合订阅条件的服务器({0})}" />
                             </StackPanel>
                         </Expander.Header>
                         <Expander.Content>
@@ -82,7 +84,8 @@
                             <StackPanel Orientation="Horizontal">
                                 <ic:SymbolIcon Symbol="List" FontSize="20"
                                                VerticalAlignment="Center" />
-                                <Label VerticalAlignment="Center">全部服务器</Label>
+                                <Label VerticalAlignment="Center"
+                                       Content="{Binding ServerManager.Servers.Count,StringFormat=全部服务器({0})}" />
                             </StackPanel>
                         </Expander.Header>
                         <Expander.Content>

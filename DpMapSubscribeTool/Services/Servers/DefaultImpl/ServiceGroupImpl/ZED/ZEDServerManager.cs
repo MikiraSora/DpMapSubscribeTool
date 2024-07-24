@@ -199,6 +199,8 @@ public class ZEDServerManager : IZEDServerServiceBase, IServerInfoSearcher, ISer
 
     private Task UpdateServerStatus(List<ZEDServer> serverList)
     {
+        foreach (var server in serverList)
+            mapManager.CacheMapTranslationName(ServerGroup, server.Map, server.MapChi);
         currentServerStatusList = serverList;
         currentServerStatusMap = serverList.ToDictionary(x => x.Ip, x => x);
         logger.LogDebugEx("server list updated.");

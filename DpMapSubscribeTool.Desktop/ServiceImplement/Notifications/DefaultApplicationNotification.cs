@@ -207,7 +207,7 @@ public class DefaultApplicationNotification : IApplicationNotification
     private void NotifySqueezeJoinServerSuccessTaskBar(Server server, MapSubscribe subscribe,
         Action<UserReaction> userComfirmCallback)
     {
-        var mapTranslationName = mapManager.GetMapTranslationName(server.Map);
+        var mapTranslationName = mapManager.GetMapTranslationName(server.Info.ServerGroup, server.Map);
         mapTranslationName = !string.IsNullOrWhiteSpace(mapTranslationName) ? $"({mapTranslationName})" : string.Empty;
 
         var sb = new StringBuilder();

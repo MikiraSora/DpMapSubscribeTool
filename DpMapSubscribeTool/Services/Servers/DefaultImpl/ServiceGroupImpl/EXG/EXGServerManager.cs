@@ -179,6 +179,8 @@ public class EXGServerManager : IEXGServerServiceBase, IServerInfoSearcher, ISer
 
     private Task UpdateServerStatus(List<EXGServerStatus> serverStatusList)
     {
+        foreach (var server in serverStatusList)
+            mapManager.CacheMapTranslationName(ServerGroup, server.Status.Map, server.Status.MapDisplayName);
         currentServerStatusList = serverStatusList;
         currentServerStatusMap = serverStatusList.ToDictionary(x => $"{x.Server.Ip}:{x.Server.Port}", x => x);
         logger.LogDebugEx("server status updated.");

@@ -23,27 +23,32 @@ public class DefaultMapManager : IMapManager
         Initialize();
     }
 
-    public string GetMapTranslationName(string mapName)
+    public string GetMapTranslationName(string serviceGroup, string mapName)
     {
-        return translationMapData.TranslationNames.TryGetValue(mapName, out var mapTranslationName)
+        var serverGruopKey = $"{serviceGroup}:{mapName}";
+        var defaultKey = $":{mapName}";
+
+        return translationMapData.TranslationNames.TryGetValue(serverGruopKey, out var mapTranslationName)
             ? mapTranslationName
-            : default;
+            : translationMapData.TranslationNames.TryGetValue(defaultKey, out var defaultTranslationName)
+                ? defaultTranslationName
+                : default;
     }
 
-    public void CacheMapTranslationName(string mapName, string mapTranslationName, bool enableOverwrite)
+    public void CacheMapTranslationName(string serviceGroup, string mapName, string mapTranslationName)
     {
-        if (translationMapData.TranslationNames.TryGetValue(mapName, out var oldTranslationName))
-            if (enableOverwrite)
-                logger.LogInformationEx(
-                    $"overwrite map {mapName} translation name: {oldTranslationName} -> {mapTranslationName}");
-            else
-                return;
-        translationMapData.TranslationNames[mapName] = mapTranslationName;
+        if (string.IsNullOrWhiteSpace(mapTranslationName))
+            return;
+        var serverGruopKey = $"{serviceGroup}:{mapName}";
+        var defaultKey = $":{mapName}";
+
+        translationMapData.TranslationNames[serverGruopKey] = mapTranslationName;
+        translationMapData.TranslationNames.TryAdd(defaultKey, mapTranslationName);
     }
 
     private async void Initialize()
     {
-#if DEBUG 
+#if DEBUG
         if (DesignModeHelper.IsDesignMode)
             return; //NOT SUPPORT IN DESIGN MODE
 #endif
@@ -54,7 +59,6 @@ public class DefaultMapManager : IMapManager
     private async void OnAutoSaveDataTask()
     {
         while (true)
-        {
             try
             {
                 await persistence.Save(translationMapData);
@@ -63,8 +67,7 @@ public class DefaultMapManager : IMapManager
             }
             catch (Exception e)
             {
-                logger.LogErrorEx(e,$"TranslationMapData failed: {e.Message}");
+                logger.LogErrorEx(e, $"TranslationMapData failed: {e.Message}");
             }
-        }
     }
 }

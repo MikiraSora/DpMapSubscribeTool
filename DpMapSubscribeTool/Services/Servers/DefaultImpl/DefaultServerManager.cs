@@ -415,40 +415,48 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
         while (!cancellationToken.IsCancellationRequested)
         {
             //get current player count
-            var info = await gameServer.GetInformationAsync(cancellationToken);
-            var currentPlayerCount = info.OnlinePlayers;
-
-            CurrentSqueezeJoinTaskStatus.Server.CurrentPlayerCount = currentPlayerCount;
-
-            logger.LogInformationEx(
-                $"currentPlayerCount({currentPlayerCount}) <= ({info.MaxPlayers - diff}) maxPlayerCount({info.MaxPlayers}) - diff({diff}).");
-            if (currentPlayerCount <= info.MaxPlayers - diff)
+            try
             {
-                //join
-                await JoinServer(serverInfo);
+                var info = await gameServer.GetInformationAsync(cancellationToken);
+                var currentPlayerCount = info.OnlinePlayers;
 
-                //currently there is no way to check if user squeeze-join server successfully.
-                //because of map download request and loading.
-                //so we just notify user we had executed join-server cmd at all. ^ ^
-                /*
-                //wait
-                await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
-                if (cancellationToken.IsCancellationRequested)
-                    continue;
-                //check
-                var players = (await gameServer.GetPlayersAsync(cancellationToken)).Select(x => x.Name).ToList();
-                if (await runner.IsUserInServer(players, cancellationToken))
+                CurrentSqueezeJoinTaskStatus.Server.CurrentPlayerCount = currentPlayerCount;
+
+                logger.LogInformationEx(
+                    $"currentPlayerCount({currentPlayerCount}) <= ({info.MaxPlayers - diff}) maxPlayerCount({info.MaxPlayers}) - diff({diff}).");
+                if (currentPlayerCount <= info.MaxPlayers - diff)
                 {
-                    logger.LogInformationEx("squeeze-join server successfully.");
+                    //join
+                    await JoinServer(serverInfo);
+
+                    //currently there is no way to check if user squeeze-join server successfully.
+                    //because of map download request and loading.
+                    //so we just notify user we had executed join-server cmd at all. ^ ^
+                    /*
+                    //wait
+                    await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
+                    if (cancellationToken.IsCancellationRequested)
+                        continue;
+                    //check
+                    var players = (await gameServer.GetPlayersAsync(cancellationToken)).Select(x => x.Name).ToList();
+                    if (await runner.IsUserInServer(players, cancellationToken))
+                    {
+                        logger.LogInformationEx("squeeze-join server successfully.");
+                        break;
+                    }
+
+                    logger.LogInformationEx("squeeze-join server failed, try again.");
+                    */
+
+                    applicationNotification.NofitySqueezeJoinSuccess(serverInfo).NoWait();
                     break;
                 }
-
-                logger.LogInformationEx("squeeze-join server failed, try again.");
-                */
-
-                applicationNotification.NofitySqueezeJoinSuccess(serverInfo).NoWait();
-                break;
             }
+            catch (Exception e)
+            {
+                logger.LogErrorEx(e, $"squeeze-join thow exception:{e.Message}");
+            }
+
 
             await Task.Delay(timeInterval, default);
         }

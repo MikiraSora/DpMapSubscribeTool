@@ -245,7 +245,7 @@ public class FysServerManager : IFysServerServiceBase, IServerInfoSearcher, ISer
             //event-stream data is ready(?)
             if (!taskCompletionSource.Task.IsCompleted)
                 taskCompletionSource.SetResult();
-            
+
             await Task.Delay(timeInterval, default);
         }
 
@@ -306,7 +306,7 @@ public class FysServerManager : IFysServerServiceBase, IServerInfoSearcher, ISer
         logger.LogInformationEx("event-stream data updated.");
 
         foreach (var (map, translation) in eventStreamData.Servers.Select(x => (x.Map, x.Translation)))
-            mapManager.CacheMapTranslationName(map, translation, false);
+            mapManager.CacheMapTranslationName(ServerGroup, map, translation);
 
         cacheEventStreamServerMap =
             currentCachedEventStreamData.Servers.ToDictionary(x => $"{x.Host}:{x.Port}", x => x);

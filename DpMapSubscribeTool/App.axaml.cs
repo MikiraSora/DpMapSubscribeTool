@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -29,7 +30,9 @@ public class App : Application
         var logger = RootServiceProvider.GetService<ILogger<App>>();
 
         var injectableConverters = RootServiceProvider.GetServices<IInjectableValueConverter>();
-        foreach (var converter in injectableConverters)
+        var injectableMultiValueConverters = RootServiceProvider.GetServices<IInjectableMultiValueConverter>();
+
+        foreach (var converter in injectableConverters.AsEnumerable<object>().Concat(injectableMultiValueConverters))
         {
             var key = converter.GetType().Name;
             logger.LogInformationEx($"add injectable converter: {key}");
