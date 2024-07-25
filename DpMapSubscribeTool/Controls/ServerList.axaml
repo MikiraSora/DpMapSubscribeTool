@@ -26,7 +26,7 @@
                 SortingState="{Binding #hostDataGrid.((controls:ServerList)DataContext).MapSortDirection}"
                 SortMemberPath="Map" Width="Auto" Header="地图" x:DataType="models:Server">
                 <DataTemplate x:DataType="models:Server">
-                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding Map}"
+                    <TextBlock VerticalAlignment="Center" Text="{Binding Map}"
                                Foreground="{Binding GameMode,Mode=OneWay,Converter={StaticResource BrushMapTypeConverter}}" />
                 </DataTemplate>
             </DataBoxTemplateColumn>
