@@ -159,6 +159,7 @@ public class FysServerManager : IFysServerServiceBase, IServerInfoSearcher, ISer
         var fysServer = ActivatorUtilities.CreateInstance<FysServer>(provider);
         fysServer.UpdateProperties(etServer, info);
         fysServer.MapTranslationName = mapManager.GetMapTranslationName(ServerGroup, fysServer.Map);
+        logger.LogDebugEx($"get fys translate name {fysServer.MapTranslationName} by {ServerGroup}:{fysServer.Map} ");
         return fysServer;
     }
 
@@ -247,7 +248,7 @@ public class FysServerManager : IFysServerServiceBase, IServerInfoSearcher, ISer
             if (!taskCompletionSource.Task.IsCompleted)
                 taskCompletionSource.SetResult();
 
-            await Task.Delay(timeInterval, default);
+            await Task.Delay(timeInterval, CancellationToken.None);
         }
 
         logger.LogInformationEx("event-stream thread end.");

@@ -458,7 +458,7 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
             }
 
 
-            await Task.Delay(timeInterval, default);
+            await Task.Delay(timeInterval, CancellationToken.None);
         }
 
         gameServer?.Dispose();

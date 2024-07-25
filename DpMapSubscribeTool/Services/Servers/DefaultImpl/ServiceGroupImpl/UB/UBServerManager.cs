@@ -189,7 +189,7 @@ public class UBServerManager : IUBServerServiceBase, IServerInfoSearcher, IServe
         var read = 0;
 
         if (!taskCompletionSource.Task.IsCompleted)
-            Task.Delay(TimeSpan.FromSeconds(1), default)
+            Task.Delay(TimeSpan.FromSeconds(1), CancellationToken.None)
                 .ContinueWith(t => taskCompletionSource.SetResult(), CancellationToken.None)
                 .NoWait();
 
