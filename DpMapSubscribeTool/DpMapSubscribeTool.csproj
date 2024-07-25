@@ -9,7 +9,7 @@
 
     <PropertyGroup>
         <BuildTime>$(MSBuildThisFileFullPath)$(MSBuildThisFileModifiedTime)</BuildTime>
-        <BuildTimeUtc>$([System.DateTime]::Now.ToString("yyyy/MM/dd HH:mm:ss.fff"))</BuildTimeUtc>
+        <BuildTimeUtc>$([System.DateTime]::Now.ToString("yyyy/M/dd H:mm:ss.fff"))</BuildTimeUtc>
     </PropertyGroup>
 
     <Target Name="GenerateBuildTimeClass" BeforeTargets="BeforeBuild">
@@ -38,6 +38,7 @@
         <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="$(AvaloniaVersion)"/>
         <PackageReference Include="DataBox" Version="11.1.0"/>
         <PackageReference Include="DialogHost.Avalonia" Version="0.7.9"/>
+        <PackageReference Include="DynamicData" Version="9.0.1" />
         <PackageReference Include="FluentAvalonia.ProgressRing" Version="1.69.2"/>
         <PackageReference Include="FluentIcons.Avalonia" Version="1.1.249"/>
         <PackageReference Include="FluentIcons.Common" Version="1.1.249"/>

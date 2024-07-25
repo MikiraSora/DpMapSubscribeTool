@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Globalization;
-using System.Linq;
 using Avalonia.Data.Converters;
 using Avalonia.Media;
+using DpMapSubscribeTool.Models;
 
 namespace DpMapSubscribeTool.ValueConverters;
 
@@ -10,16 +10,15 @@ public class BrushMapTypeConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        if (value is not string map)
+        if (value is not GameMode mode)
             return Brushes.White;
 
-        var mapType = map.Split("_").FirstOrDefault()?.ToLower();
-        return mapType switch
+        return mode switch
         {
-            "ze" => Brushes.Chocolate,
-            "ttt" => Brushes.CornflowerBlue,
-            "mg" => Brushes.DarkKhaki,
-            "bhop" or "kz" or "surf" => Brushes.DarkOrchid,
+            GameMode.ZE => Brushes.Chocolate,
+            GameMode.TTT => Brushes.CornflowerBlue,
+            GameMode.MG => Brushes.DarkKhaki,
+            GameMode.BHOP or GameMode.KZ or GameMode.SURF => Brushes.DarkOrchid,
             _ => Brushes.White
         };
     }

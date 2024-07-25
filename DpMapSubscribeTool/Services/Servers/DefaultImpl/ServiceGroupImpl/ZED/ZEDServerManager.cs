@@ -120,6 +120,7 @@ public class ZEDServerManager : IZEDServerServiceBase, IServerInfoSearcher, ISer
         if (currentServerStatusMap.TryGetValue(exgWrappedServer.Info.EndPointDescription, out var zedServer))
         {
             exgWrappedServer.Map = zedServer.Map ?? "<Unknown Map>";
+            exgWrappedServer.MapTranslationName = mapManager.GetMapTranslationName(ServerGroup, exgWrappedServer.Map);
             exgWrappedServer.State = string.Empty;
             exgWrappedServer.CurrentPlayerCount = zedServer.Players;
             exgWrappedServer.MaxPlayerCount = zedServer.MaxPlayers;

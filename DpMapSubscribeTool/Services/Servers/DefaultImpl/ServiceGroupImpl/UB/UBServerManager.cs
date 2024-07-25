@@ -140,6 +140,7 @@ public class UBServerManager : IUBServerServiceBase, IServerInfoSearcher, IServe
         if (endPointServerMap.TryGetValue(ubWrappedServer.Info.EndPointDescription, out var ubServer))
         {
             ubWrappedServer.Map = ubServer.CurrentMap?.Name ?? "<Unknown Map>";
+            ubWrappedServer.MapTranslationName = mapManager.GetMapTranslationName(ServerGroup, ubWrappedServer.Map);
             ubWrappedServer.State = $"{ubServer.NumRounds}/{ubServer.MaxRounds}";
             ubWrappedServer.CurrentPlayerCount = ubServer.Clients.Count;
             ubWrappedServer.MaxPlayerCount = ubServer.MaxPlayers;

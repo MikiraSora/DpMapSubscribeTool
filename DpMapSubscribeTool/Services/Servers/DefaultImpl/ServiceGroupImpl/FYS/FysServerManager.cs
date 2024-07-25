@@ -158,6 +158,7 @@ public class FysServerManager : IFysServerServiceBase, IServerInfoSearcher, ISer
 
         var fysServer = ActivatorUtilities.CreateInstance<FysServer>(provider);
         fysServer.UpdateProperties(etServer, info);
+        fysServer.MapTranslationName = mapManager.GetMapTranslationName(ServerGroup, fysServer.Map);
         return fysServer;
     }
 

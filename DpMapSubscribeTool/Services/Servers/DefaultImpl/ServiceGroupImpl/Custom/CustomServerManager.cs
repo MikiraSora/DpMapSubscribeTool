@@ -109,6 +109,7 @@ public class CustomServerManager : ICustomServerServiceBase, IServerInfoSearcher
         if (currentServerStatusMap.TryGetValue(customWrappedServer.Info.EndPointDescription, out var customServer))
         {
             customWrappedServer.Map = customServer.Map ?? "<Unknown Map>";
+            customWrappedServer.MapTranslationName = mapManager.GetMapTranslationName(ServerGroup, customWrappedServer.Map);
             customWrappedServer.State = string.Empty;
             customWrappedServer.CurrentPlayerCount = customServer.CurrentPlayerCount;
             customWrappedServer.MaxPlayerCount = customServer.MaxPlayerCount;

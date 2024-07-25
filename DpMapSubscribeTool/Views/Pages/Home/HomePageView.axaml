@@ -28,7 +28,7 @@
                         <Label FontWeight="Bold" Content="{Binding ProgramCommitIdShort }" Grid.Row="0" Grid.Column="1" />
                         <!---->
                         <Label HorizontalAlignment="Right" Content="CommitTime:" Grid.Row="1" Grid.Column="0" />
-                        <Label FontWeight="Bold" Content="{Binding ProgramCommitDate }" Grid.Row="1" Grid.Column="1" />
+                        <Label FontWeight="Bold" Content="{Binding ProgramCommitDate,StringFormat=yyyy/M/dd H:mm:ss.fff }" Grid.Row="1" Grid.Column="1" />
                         <!---->
                         <Label HorizontalAlignment="Right" Content="BuildTime:" Grid.Row="2" Grid.Column="0" />
                         <Label FontWeight="Bold" Content="{Binding ProgramBuildTime }" Grid.Row="2" Grid.Column="1" />

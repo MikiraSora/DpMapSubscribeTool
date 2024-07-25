@@ -9,7 +9,7 @@ public class HomePageViewModel : PageViewModelBase
     public string ProgramCommitId => ThisAssembly.GitCommitId;
     public string ProgramCommitIdShort => ProgramCommitId[..7];
     public string AssemblyVersion => ThisAssembly.AssemblyVersion;
-    public DateTime ProgramCommitDate => ThisAssembly.GitCommitDate;
+    public DateTime ProgramCommitDate => ThisAssembly.GitCommitDate + TimeSpan.FromHours(8);
     public string ProgramBuildConfiguration => ThisAssembly.AssemblyConfiguration;
 
     public string ProgramBuildTime

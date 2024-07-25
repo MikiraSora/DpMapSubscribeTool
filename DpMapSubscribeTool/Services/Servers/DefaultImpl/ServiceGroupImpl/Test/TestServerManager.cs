@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using DpMapSubscribeTool.Models;
 using DpMapSubscribeTool.Services.Dialog;
+using DpMapSubscribeTool.Services.Map;
 using DpMapSubscribeTool.Services.Servers.DefaultImpl.ServiceGroupImpl.Test.Bases;
 using DpMapSubscribeTool.Utils.Injections;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,6 +27,11 @@ public partial class TestServerManager : ObservableObject, IServerInfoSearcher, 
         ServerGroup = "Test"
     };
 
+    private readonly IDialogManager dialogManager;
+
+    private readonly ILogger<TestServerManager> logger;
+    private readonly IMapManager mapManager;
+
     private readonly Server server = new TestServer
     {
         Info = info,
@@ -35,9 +41,6 @@ public partial class TestServerManager : ObservableObject, IServerInfoSearcher, 
         MaxPlayerCount = 64,
         State = "1/1"
     };
-
-    private readonly ILogger<TestServerManager> logger;
-    private readonly IDialogManager dialogManager;
 
     [ObservableProperty]
     private Server serverWaitForUpdate = new TestServer
@@ -50,10 +53,11 @@ public partial class TestServerManager : ObservableObject, IServerInfoSearcher, 
         State = "1/1"
     };
 
-    public TestServerManager(ILogger<TestServerManager> logger, IDialogManager dialogManager)
+    public TestServerManager(ILogger<TestServerManager> logger, IDialogManager dialogManager, IMapManager mapManager)
     {
         this.logger = logger;
         this.dialogManager = dialogManager;
+        this.mapManager = mapManager;
     }
 
     public async Task Join(ServerInfo serverInfo)
@@ -77,6 +81,7 @@ public partial class TestServerManager : ObservableObject, IServerInfoSearcher, 
     public Task UpdateServer(Server server)
     {
         server.Map = ServerWaitForUpdate.Map;
+        server.MapTranslationName = mapManager.GetMapTranslationName(ServerGroup, server.Map);
         server.CurrentPlayerCount = ServerWaitForUpdate.CurrentPlayerCount;
         server.MaxPlayerCount = ServerWaitForUpdate.MaxPlayerCount;
         server.State = ServerWaitForUpdate.State;

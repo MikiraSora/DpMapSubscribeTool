@@ -113,6 +113,7 @@ public class EXGServerManager : IEXGServerServiceBase, IServerInfoSearcher, ISer
         if (currentServerStatusMap.TryGetValue(exgWrappedServer.Info.EndPointDescription, out var exgServerStatus))
         {
             exgWrappedServer.Map = exgServerStatus.Status.Map ?? "<Unknown Map>";
+            exgWrappedServer.MapTranslationName = mapManager.GetMapTranslationName(ServerGroup, exgServerStatus.Status.Map);
             exgWrappedServer.State = string.Empty;
             exgWrappedServer.CurrentPlayerCount = exgServerStatus.Status.CurrentPlayers;
             exgWrappedServer.MaxPlayerCount = exgServerStatus.Status.MaxPlayers;
