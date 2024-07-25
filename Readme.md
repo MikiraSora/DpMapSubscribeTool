@@ -15,4 +15,6 @@
 * 图池CD查询
 
 ### 截图
+![image](https://github.com/user-attachments/assets/4a8432cc-8474-4f6b-a537-c689b5ab432c)
+![image](https://github.com/user-attachments/assets/22d84636-9fda-41f0-90c4-3d149c961dfd)
 
