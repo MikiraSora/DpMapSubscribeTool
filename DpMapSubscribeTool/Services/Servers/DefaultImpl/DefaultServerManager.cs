@@ -103,13 +103,20 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
 
     public async Task PingServer(Server server)
     {
-        var ping = new Ping();
-        var reply = await ping.SendPingAsync(server.Info.Host, 2000);
+        try
+        {
+            var ping = new Ping();
+            var reply = await ping.SendPingAsync(server.Info.Host, 2000);
 
-        if (reply.Status == IPStatus.Success)
-            server.Delay = (int) reply.RoundtripTime;
-        else
+            if (reply.Status == IPStatus.Success)
+                server.Delay = (int) reply.RoundtripTime;
+            else
+                server.Delay = -1;
+        }
+        catch (Exception e)
+        {
             server.Delay = -1;
+        }
     }
 
     public async Task JoinServer(ServerInfo serverInfo)

@@ -181,6 +181,7 @@ public class UBServerManager : IUBServerServiceBase, IServerInfoSearcher, IServe
 #endif
         logger.LogInformationEx("thread start.");
 
+        Restart:
         var client = new ClientWebSocket();
         await client.ConnectAsync(new Uri("wss://ws2.moeub.cn/ws?files=0&appid=730"), default);
         logger.LogInformationEx("websocket connected successfully.");
@@ -214,6 +215,8 @@ public class UBServerManager : IUBServerServiceBase, IServerInfoSearcher, IServe
             catch (Exception e)
             {
                 logger.LogErrorEx(e, "wss recv message failed.");
+                client?.Dispose();
+                goto Restart;
             }
 
         logger.LogInformationEx("thread end.");

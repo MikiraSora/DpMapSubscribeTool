@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DpMapSubscribeTool.Models;
@@ -7,10 +6,8 @@ using DpMapSubscribeTool.Services.Dialog;
 using DpMapSubscribeTool.Services.Notifications;
 using DpMapSubscribeTool.Services.Persistences;
 using DpMapSubscribeTool.Services.Servers;
-using DpMapSubscribeTool.Services.SteamAPI;
 using DpMapSubscribeTool.Utils;
 using DpMapSubscribeTool.Utils.MethodExtensions;
-using DpMapSubscribeTool.ViewModels.Dialogs.AddNewCustomServerInfo;
 using DpMapSubscribeTool.ViewModels.Dialogs.SqueezeJoinSetup;
 using Microsoft.Extensions.Logging;
 
@@ -29,6 +26,9 @@ public partial class ServerListPageViewModel : PageViewModelBase
 
     [ObservableProperty]
     private bool isSplitPaneOpen;
+
+    [ObservableProperty]
+    private ServerInfomationDetail serverDetail;
 
     [ObservableProperty]
     private IServerManager serverManager;
@@ -61,7 +61,7 @@ public partial class ServerListPageViewModel : PageViewModelBase
     {
         await ServerManager.JoinServer(server);
     }
-    
+
     [RelayCommand]
     private void ShowFilterPane()
     {
@@ -70,10 +70,11 @@ public partial class ServerListPageViewModel : PageViewModelBase
     }
 
     [RelayCommand]
-    private void ShowServerInfoPane()
+    private async Task ShowServerInfoPane(Server server)
     {
         IsShowFilterPane = false;
         IsSplitPaneOpen = true;
+        ServerDetail = await ServerManager.BeginServerInfomationDetailQuery(server.Info);
     }
 
     [RelayCommand]
@@ -81,7 +82,7 @@ public partial class ServerListPageViewModel : PageViewModelBase
     {
         await ServerManager.RefreshFilterServers();
     }
-    
+
     [RelayCommand]
     private async Task ResetServerListFilterOptions()
     {
@@ -89,18 +90,16 @@ public partial class ServerListPageViewModel : PageViewModelBase
     }
 
     [RelayCommand]
-    private void PaneClosed()
+    private async Task PaneClosed()
     {
         IsSplitPaneOpen = false;
+        await ServerManager.StopServerInfomationDetailQuery();
     }
 
     [RelayCommand]
-    private void ServerDoubleTapped(Server server)
+    private async Task ServerDoubleTapped(Server server)
     {
-        //SplitPane.Pane switch to server info content.
-        IsShowFilterPane = false;
-        //open SplitPane.Pane
-        IsSplitPaneOpen = true;
+        await ShowServerInfoPane(server);
     }
 
     [RelayCommand]

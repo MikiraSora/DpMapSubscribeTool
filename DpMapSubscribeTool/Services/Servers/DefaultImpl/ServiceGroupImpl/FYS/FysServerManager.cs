@@ -158,8 +158,10 @@ public class FysServerManager : IFysServerServiceBase, IServerInfoSearcher, ISer
 
         var fysServer = ActivatorUtilities.CreateInstance<FysServer>(provider);
         fysServer.UpdateProperties(etServer, info);
-        fysServer.MapTranslationName = mapManager.GetMapTranslationName(ServerGroup, fysServer.Map);
-        logger.LogDebugEx($"get fys translate name {fysServer.MapTranslationName} by {ServerGroup}:{fysServer.Map} ");
+        fysServer.MapTranslationName = string.IsNullOrWhiteSpace(etServer.Translation)
+            ? mapManager.GetMapTranslationName(ServerGroup, etServer.Map)
+            : etServer.Translation;
+        logger.LogDebugEx($"get fys translate name {fysServer.MapTranslationName} by {ServerGroup}:{etServer.Map} ");
         return fysServer;
     }
 

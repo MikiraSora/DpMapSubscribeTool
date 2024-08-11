@@ -24,7 +24,8 @@ public class FysServer : Server
         Map = fromServer.Map;
         MaxPlayerCount = fromServer.MaxPlayers;
         CurrentPlayerCount = fromServer.CurrentPlayers;
-
+        MapTranslationName = fromServer.Translation;
+        
         State = fromServer.TotalStage > 0 ? $"{fromServer.CurrentStage}/{fromServer.TotalStage}" : string.Empty;
     }
 }

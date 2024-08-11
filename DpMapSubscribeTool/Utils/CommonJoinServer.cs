@@ -30,9 +30,11 @@ public class CommonJoinServer
             return;
         }
 
+        var protocal = isRunningSteamChina() ? "steamchina" : "steam";
+
         var ipAddr = ipList.First();
         //var steamCmd = $"steam://connect/{ipAddr}:{serverInfo.Port}";
-        var steamCmd = $"steam://rungame/730/76561202255233023/+connect%20{ipAddr}:{port}";
+        var steamCmd = $"{protocal}://rungame/730/76561202255233023/+connect%20{ipAddr}:{port}";
         logger.LogInformationEx($"execute steamCmd: {steamCmd}");
         Process.Start(new ProcessStartInfo("cmd.exe")
         {
@@ -40,5 +42,10 @@ public class CommonJoinServer
             Arguments = $"/C start {steamCmd}",
             CreateNoWindow = true
         });
+    }
+
+    public bool isRunningSteamChina()
+    {
+        return Process.GetProcessesByName("steamchina").Length > 0;
     }
 }
