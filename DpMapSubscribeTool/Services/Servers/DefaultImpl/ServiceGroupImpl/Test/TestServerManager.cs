@@ -70,7 +70,11 @@ public partial class TestServerManager : ObservableObject, IServerInfoSearcher, 
 
     public Task<IEnumerable<ServerInfo>> GetAllAvaliableServerInfo()
     {
+#if DEBUG
         return Task.FromResult<IEnumerable<ServerInfo>>(new[] {server.Info});
+#else
+        return Task.FromResult<IEnumerable<ServerInfo>>(Array.Empty<ServerInfo>());
+#endif
     }
 
     public Task<Server> QueryServer(ServerInfo info)
