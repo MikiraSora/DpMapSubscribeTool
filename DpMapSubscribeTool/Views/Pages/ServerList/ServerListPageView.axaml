@@ -54,6 +54,7 @@
                         <Expander.Content>
                             <controls1:ServerList JoinServerCommand="{Binding JoinServerCommand}"
                                                   Servers="{Binding ServerManager.FilterServers}"
+                                                  ServerDetailCommand="{Binding ServerDetailTappedCommand}"
                                                   ServerDoubleTappedCommand="{Binding ServerDoubleTappedCommand}"
                                                   SqueezeJoinServerCommand="{Binding  SqueezeJoinServerCommand}" />
                         </Expander.Content>
@@ -73,6 +74,7 @@
                         <Expander.Content>
                             <controls1:ServerList JoinServerCommand="{Binding JoinServerCommand}"
                                                   Servers="{Binding ServerManager.SubscribeServers}"
+                                                  ServerDetailCommand="{Binding ServerDetailTappedCommand}"
                                                   ServerDoubleTappedCommand="{Binding ServerDoubleTappedCommand}"
                                                   SqueezeJoinServerCommand="{Binding  SqueezeJoinServerCommand}" />
                         </Expander.Content>
@@ -91,6 +93,7 @@
                         <Expander.Content>
                             <controls1:ServerList JoinServerCommand="{Binding JoinServerCommand}"
                                                   Servers="{Binding ServerManager.Servers}"
+                                                  ServerDetailCommand="{Binding ServerDetailTappedCommand}"
                                                   ServerDoubleTappedCommand="{Binding ServerDoubleTappedCommand}"
                                                   SqueezeJoinServerCommand="{Binding  SqueezeJoinServerCommand}" />
                         </Expander.Content>

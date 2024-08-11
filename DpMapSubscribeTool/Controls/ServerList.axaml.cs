@@ -111,6 +111,15 @@ public partial class ServerList : UserControl
         get => GetValue(ServersViewProperty);
         set => SetValue(ServersViewProperty, value);
     }
+    
+    public static readonly StyledProperty<ICommand> ServerDetailCommandProperty =
+        AvaloniaProperty.Register<ServerList, ICommand>(nameof(ServerDetailCommand), enableDataValidation: true);
+    
+    public ICommand ServerDetailCommand
+    {
+        get => GetValue(ServerDetailCommandProperty);
+        set => SetValue(ServerDetailCommandProperty, value);
+    }
 
     public ICommand ServerDoubleTappedCommand
     {

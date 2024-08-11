@@ -136,7 +136,7 @@ public class DefaultApplicationNotification : IApplicationNotification
         {
             logger.LogInformationEx($"user clicked actionId: {actionId}");
             cachedCallbackMap.Remove(actionId);
-            callback(UserReaction.Dismiss);
+            callback(UserReaction.Comfirm);
         }
         else if ("default" != actionId)
         {

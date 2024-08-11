@@ -86,10 +86,12 @@
             <Style Selector="DataBoxRow">
                 <Setter Property="ContextMenu">
                     <ContextMenu>
+                        <!--
                         <MenuItem x:DataType="models:Server"
-                                  Command="{Binding #hostDataGrid.((controls:ServerList)DataContext).ServerDoubleTappedCommand}"
+                                  Command="{Binding #hostDataGrid.((controls:ServerList)DataContext).ServerDetailCommand}"
                                   CommandParameter="{Binding .}"
                                   Header="查看服务器" />
+                                  -->
                         <MenuItem x:DataType="models:Server"
                                   Command="{Binding #hostDataGrid.((controls:ServerList)DataContext).JoinServerCommand}"
                                   CommandParameter="{Binding .}"

@@ -97,9 +97,15 @@ public partial class ServerListPageViewModel : PageViewModelBase
     }
 
     [RelayCommand]
+    private async Task ServerDetailTapped(Server server)
+    {
+        ShowServerInfoPane(server);
+    }
+
+    [RelayCommand]
     private async Task ServerDoubleTapped(Server server)
     {
-        await ShowServerInfoPane(server);
+        JoinServer(server).NoWait();
     }
 
     [RelayCommand]

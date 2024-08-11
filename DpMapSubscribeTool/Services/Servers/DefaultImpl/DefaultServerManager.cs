@@ -18,6 +18,7 @@ using DpMapSubscribeTool.Utils.MethodExtensions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SteamQuery;
+using SteamQuery.Models;
 
 namespace DpMapSubscribeTool.Services.Servers.DefaultImpl;
 
@@ -310,54 +311,62 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
         using var gameServer = new GameServer(detail.Server.Info.Host, detail.Server.Info.Port);
 
         while (!ct.IsCancellationRequested)
-        {
-            var info = await gameServer.GetInformationAsync(ct);
-
-            if (detail.Server.CurrentPlayerCount != info.OnlinePlayers)
-                detail.Server.CurrentPlayerCount = info.OnlinePlayers;
-            if (detail.Server.MaxPlayerCount != info.MaxPlayers)
-                detail.Server.MaxPlayerCount = info.MaxPlayers;
-            if (detail.Server.Map != info.Map)
-                detail.Server.Map = info.Map;
-
-            var playerMap = (await gameServer.GetPlayersAsync(ct)).ToDictionary(x => x.Name, x => x);
-
-            await Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                foreach (var playerDetail in detail.PlayerDetails.ToArray())
-                    if (playerMap.TryGetValue(playerDetail.Name, out var player))
-                    {
-                        playerMap.Remove(playerDetail.Name);
-
-                        playerDetail.Duration = player.DurationTimeSpan;
-                        playerDetail.Score = player.Score;
-                    }
-                    else
-                    {
-                        //not found , means that player is leave
-                        detail.PlayerDetails.Remove(playerDetail);
-                    }
-
-                foreach (var player in playerMap.Values)
-                    detail.PlayerDetails.Add(new ServerInfomationPlayerDetail
-                    {
-                        Duration = player.DurationTimeSpan,
-                        Name = player.Name,
-                        Score = player.Score
-                    });
-
-                logger.LogDebugEx("");
-            });
-
             try
             {
+                var info = await gameServer.GetInformationAsync(ct);
+
+                if (detail.Server.CurrentPlayerCount != info.OnlinePlayers)
+                    detail.Server.CurrentPlayerCount = info.OnlinePlayers;
+                if (detail.Server.MaxPlayerCount != info.MaxPlayers)
+                    detail.Server.MaxPlayerCount = info.MaxPlayers;
+                if (detail.Server.Map != info.Map)
+                    detail.Server.Map = info.Map;
+
+                var players = await gameServer.GetPlayersAsync(ct);
+                var playerMap = new Dictionary<string, SteamQueryPlayer>();
+                foreach (var player in players)
+                {
+                    var key = player.Name;
+                    if (!playerMap.TryAdd(key,player))
+                    {
+                        //name conflict?
+                    }
+                }
+
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    foreach (var playerDetail in detail.PlayerDetails.ToArray())
+                        if (playerMap.TryGetValue(playerDetail.Name, out var player))
+                        {
+                            playerMap.Remove(playerDetail.Name);
+
+                            playerDetail.Duration = player.DurationTimeSpan;
+                            playerDetail.Score = player.Score;
+                        }
+                        else
+                        {
+                            //not found , means that player is leave
+                            detail.PlayerDetails.Remove(playerDetail);
+                        }
+
+                    foreach (var player in playerMap.Values)
+                        detail.PlayerDetails.Add(new ServerInfomationPlayerDetail
+                        {
+                            Duration = player.DurationTimeSpan,
+                            Name = player.Name,
+                            Score = player.Score
+                        });
+
+                    logger.LogDebugEx("");
+                });
+
                 await Task.Delay(interval, ct);
             }
-            catch
+            catch (Exception e)
             {
+                logger.LogErrorEx(e, $"Can't fetch server detail:{e.Message}, but still continue");
                 // ignored
             }
-        }
     }
 
     private void ClearSqueezeJoinServer()

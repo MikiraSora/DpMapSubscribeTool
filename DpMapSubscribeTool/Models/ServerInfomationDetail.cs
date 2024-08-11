@@ -3,11 +3,11 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace DpMapSubscribeTool.Models;
 
-public partial class ServerInfomationDetail: ObservableObject
+public partial class ServerInfomationDetail : ObservableObject
 {
     [ObservableProperty]
-    private Server server;
+    private ObservableCollection<ServerInfomationPlayerDetail> playerDetails = new();
 
     [ObservableProperty]
-    private ObservableCollection<ServerInfomationPlayerDetail> playerDetails;
+    private Server server;
 }
