@@ -167,8 +167,8 @@ public class UBServerManager : IUBServerServiceBase, IServerInfoSearcher, IServe
         var dataReadyTaskSource = new TaskCompletionSource();
         cancellationTokenSource = new CancellationTokenSource();
         dataReadyTask = dataReadyTaskSource.Task;
-        Task.Run(() => OnWebsocketThread(dataReadyTaskSource, cancellationTokenSource.Token),
-            cancellationTokenSource.Token);
+        new Task(() => OnWebsocketThread(dataReadyTaskSource, cancellationTokenSource.Token),
+            cancellationTokenSource.Token, TaskCreationOptions.LongRunning).Start();
         return dataReadyTask;
     }
 

@@ -36,7 +36,7 @@ public class CustomServerManager : ICustomServerServiceBase, IServerInfoSearcher
 
     private CancellationTokenSource cancellationTokenSource;
     private QuestServerResult[] currentServerStatusList;
-    private Dictionary<string, QuestServerResult> currentServerStatusMap;
+    private Dictionary<string, QuestServerResult> currentServerStatusMap = new();
     private CustomServerSettings customServerSettings;
 
     private Task dataReadyTask;
@@ -109,7 +109,8 @@ public class CustomServerManager : ICustomServerServiceBase, IServerInfoSearcher
         if (currentServerStatusMap.TryGetValue(customWrappedServer.Info.EndPointDescription, out var customServer))
         {
             customWrappedServer.Map = customServer.Map ?? "<Unknown Map>";
-            customWrappedServer.MapTranslationName = mapManager.GetMapTranslationName(ServerGroup, customWrappedServer.Map);
+            customWrappedServer.MapTranslationName =
+                mapManager.GetMapTranslationName(ServerGroup, customWrappedServer.Map);
             customWrappedServer.State = string.Empty;
             customWrappedServer.CurrentPlayerCount = customServer.CurrentPlayerCount;
             customWrappedServer.MaxPlayerCount = customServer.MaxPlayerCount;
@@ -135,12 +136,12 @@ public class CustomServerManager : ICustomServerServiceBase, IServerInfoSearcher
         var dataReadyTaskSource = new TaskCompletionSource();
         cancellationTokenSource = new CancellationTokenSource();
         dataReadyTask = dataReadyTaskSource.Task;
-        Task.Run(() => OnWebsocketThread(dataReadyTaskSource, cancellationTokenSource.Token),
-            cancellationTokenSource.Token);
+        new Task(() => OnServerUpdateThread(dataReadyTaskSource, cancellationTokenSource.Token),
+            cancellationTokenSource.Token, TaskCreationOptions.LongRunning).Start();
         return dataReadyTask;
     }
 
-    private async void OnWebsocketThread(TaskCompletionSource taskCompletionSource,
+    private async void OnServerUpdateThread(TaskCompletionSource taskCompletionSource,
         CancellationToken cancellationToken)
     {
 #if DEBUG
@@ -153,23 +154,24 @@ public class CustomServerManager : ICustomServerServiceBase, IServerInfoSearcher
 
         while (!cancellationToken.IsCancellationRequested)
         {
-            try
-            {
-                var cancelSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            if (steamApiManager.IsEnable)
+                try
+                {
+                    var cancelSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-                Task.Delay(TimeSpan.FromSeconds(1), cancellationToken)
-                    .ContinueWith(t => cancelSource.Cancel(), cancellationToken).NoWait();
+                    Task.Delay(TimeSpan.FromSeconds(1), cancellationToken)
+                        .ContinueWith(t => cancelSource.Cancel(), cancellationToken).NoWait();
 
-                var tasks = customServerSettings.CustomServerInfos.Select(serverInfo =>
-                    steamApiManager.QueryServer(serverInfo.Host, serverInfo.Port, cancelSource.Token)).ToArray();
+                    var tasks = customServerSettings.CustomServerInfos.Select(serverInfo =>
+                        steamApiManager.QueryServer(serverInfo.Host, serverInfo.Port, cancelSource.Token)).ToArray();
 
-                var queryResult = await Task.WhenAll(tasks);
-                UpdateQueryServers(queryResult.OfType<QuestServerResult>().ToArray());
-            }
-            catch (Exception e)
-            {
-                logger.LogErrorEx(e, "update data failed.");
-            }
+                    var queryResult = await Task.WhenAll(tasks);
+                    UpdateQueryServers(queryResult.OfType<QuestServerResult>().ToArray());
+                }
+                catch (Exception e)
+                {
+                    logger.LogErrorEx(e, "update data failed.");
+                }
 
             if (!taskCompletionSource.Task.IsCompleted)
                 taskCompletionSource.SetResult();

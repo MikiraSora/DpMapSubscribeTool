@@ -98,17 +98,19 @@ internal class Program
             // ignored
         }
 
-        var innerMessage = TravalInnerExceptionMessage(exception) ?? "<NO EXCEPTION>";
-
-        MessageBox.Show($"程序遇到致命错误，即将关闭，相关日志已保存。\n错误原因:{innerMessage}");
+        var (message, callstack) = TravalInnerExceptionMessage(exception) ?? ("<NO EXCEPTION>", string.Empty);
+        var content = $"程序遇到致命错误，即将关闭，相关日志已保存。\n错误原因:{message}\nCallStack:{callstack}";
+        
+        logger.LogErrorEx(content);
+        MessageBox.Show(content);
 
         Environment.Exit(-1);
 
         exceptionHandling = false;
 
-        string TravalInnerExceptionMessage(Exception e)
+        (string message, string callstack)? TravalInnerExceptionMessage(Exception e)
         {
-            return e is null ? null : TravalInnerExceptionMessage(e.InnerException) ?? e.Message;
+            return e is null ? null : TravalInnerExceptionMessage(e.InnerException) ?? (e.Message, e.StackTrace);
         }
     }
 }

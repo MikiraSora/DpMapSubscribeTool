@@ -283,8 +283,9 @@ public partial class DefaultServerManager : ObservableObject, IServerManager
 
         infoQueryCancellationTokenSource = new CancellationTokenSource();
         cr.Server = server;
-        Task.Run(() => OnAutoUpdateServerInfomationTask(cr, infoQueryCancellationTokenSource.Token),
-            infoQueryCancellationTokenSource.Token).NoWait();
+        
+        new Task(() => OnAutoUpdateServerInfomationTask(cr, infoQueryCancellationTokenSource.Token),
+            infoQueryCancellationTokenSource.Token, TaskCreationOptions.LongRunning).Start();
         return currentServerInfoDetail = cr;
     }
 

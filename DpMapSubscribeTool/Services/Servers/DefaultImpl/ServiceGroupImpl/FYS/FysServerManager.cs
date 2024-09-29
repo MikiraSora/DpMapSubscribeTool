@@ -113,6 +113,8 @@ public class FysServerManager : IFysServerServiceBase, IServerInfoSearcher, ISer
     public async Task<IEnumerable<ServerInfo>> GetAllAvaliableServerInfo()
     {
         await CheckOrWaitDataReady();
+        if (currentCachedEventStreamData is null)
+            return Enumerable.Empty<ServerInfo>();
         return currentCachedEventStreamData.Servers
             .Select(server => new ServerInfo
             {
@@ -203,8 +205,8 @@ public class FysServerManager : IFysServerServiceBase, IServerInfoSearcher, ISer
         var dataReadyTaskSource = new TaskCompletionSource();
         cancellationTokenSource = new CancellationTokenSource();
         dataReadyTask = dataReadyTaskSource.Task;
-        Task.Run(() => OnPullThread(dataReadyTaskSource, cancellationTokenSource.Token),
-            cancellationTokenSource.Token);
+        new Task(() => OnPullThread(dataReadyTaskSource, cancellationTokenSource.Token),
+            cancellationTokenSource.Token, TaskCreationOptions.LongRunning).Start();
         return dataReadyTask;
     }
 

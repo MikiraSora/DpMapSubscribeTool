@@ -53,7 +53,8 @@ public class DefaultMapManager : IMapManager
             return; //NOT SUPPORT IN DESIGN MODE
 #endif
         translationMapData = await persistence.Load<TranslationMapData>();
-        Task.Run(OnAutoSaveDataTask).NoWait();
+        
+        new Task(OnAutoSaveDataTask, TaskCreationOptions.LongRunning).Start();
     }
 
     private async void OnAutoSaveDataTask()
