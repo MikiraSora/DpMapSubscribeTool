@@ -7,6 +7,9 @@
 
 **本项目无任何利益相关**
 
+
+### [下载](https://github.com/MikiraSora/DpMapSubscribeTool/releases)
+
 ### roadmap
 * 服务器详细页面，比如当前玩家列表
 * 更好的UI体验,比如DataGrid/Databox改进
